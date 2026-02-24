@@ -32,10 +32,10 @@ If a QR code is scanned, the application routes the user directly to the same ev
 ## 2. Joining the Waiting List
 
 <p align="center">
-  <img src="mockupsupdated/screen4.png" width="300">
+  <img src="mockupsupdated/screen7.png" width="300">
 </p>
 <p align="center">
-  <img src="mockupsupdated/screen5.png" width="300">
+  <img src="mockupsupdated/screen6.png" width="300">
 </p>
 
 
