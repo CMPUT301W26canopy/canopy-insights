@@ -31,7 +31,8 @@ If a QR code is scanned, the application routes the user directly to the same ev
 
 ## 2. Joining the Waiting List
 
-![2](mockupsupdated/story3.png)
+![2](mockupsupdated/screen4.png)
+![2](mockupsupdated/screen5.png)
 
 After reviewing the event information, the user chooses to join the event.
 
@@ -80,6 +81,7 @@ If selected users decline, the organizer draws replacement participants from the
 ## 4. Results, Acceptance, and History
 
 ![4](mockupsupdated/story4.png)
+![4](mockupsupdated/screen13.png)
 
 The user checks the application results in their event history.
 
