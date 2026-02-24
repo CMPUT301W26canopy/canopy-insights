@@ -31,7 +31,7 @@ If a QR code is scanned, the application routes the user directly to the same ev
 
 ## 2. Joining the Waiting List
 
-![2](mockupsupdated/story2.png)
+![2](mockupsupdated/story3.png)
 
 After reviewing the event information, the user chooses to join the event.
 
@@ -54,7 +54,7 @@ The interface updates to indicate the user is now on the waiting list.
 
 ## 3. Organizer Creates Event and Runs Lottery
 
-![3](mockupsupdated/story3.png)
+![3](mockupsupdated/story2.png)
 
 An organizer creates a new event by entering the name, venue, capacity, and uploading a poster.
 
