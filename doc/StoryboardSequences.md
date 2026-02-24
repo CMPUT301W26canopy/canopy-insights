@@ -26,7 +26,7 @@ If a QR code is scanned, the application routes the user directly to the same ev
 * Display event summaries
 * Open detailed event page on selection
 
-**userstroies covered:** R2, R3, R4, R16, R17
+**userstroies covered:** R2, R3, R4, R17
 
 
 ## 2. Joining the Waiting List
@@ -55,7 +55,7 @@ The interface updates to indicate the user is now on the waiting list.
 * Verify location if required
 * Update status to waiting list
 
-**userstories covered:** R5, R6, R7, R19
+**userstories covered:** R5, R7, R19
 
 
 ## 3. Organizer Creates Event and Runs Lottery
@@ -107,4 +107,4 @@ After the event occurs, participation is recorded and the event appears in the u
 * Record attendance
 * Display participation history
 
-**userstories covered:** R7, R13, R15, R18
+**userstories covered:** R7, R13, R15
