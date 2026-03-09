@@ -1,0 +1,16 @@
+code/*.iml
+code/.gradle
+code/local.properties
+code/.idea/caches
+code/.idea/libraries
+code/.idea/modules.xml
+code/.idea/workspace.xml
+code/.idea/navEditor.xml
+code/.idea/assetWizardSettings.xml
+code/build
+code/captures
+code/.externalNativeBuild
+code/.cxx
+code/app/google-services.json
+code/gradle
+.DS_Store
