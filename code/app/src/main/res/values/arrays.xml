@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- default price range values used in filter -->
+    <array name="price_default_values">
+        <item>0</item>
+        <item>500</item>
+    </array>
+</resources>
