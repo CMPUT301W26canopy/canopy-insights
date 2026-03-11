@@ -1,5 +1,6 @@
 package com.example.lotteryapp;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -37,6 +38,10 @@ public class MainActivity extends AppCompatActivity {
         adapter = new EventAdapter(this, displayList, event -> {
             //EventDetailActivity and pass event.getId()
             Toast.makeText(this, "Opening: " + event.getName(), Toast.LENGTH_SHORT).show();
+            //Access page
+            Intent intent = new Intent(this, EventActivity.class);
+            intent.putExtra("EVENT_ID", event.getId());
+            startActivity(intent);
         });
         recyclerView.setAdapter(adapter);
         // load events
