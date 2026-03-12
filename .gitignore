@@ -14,5 +14,4 @@ code/build
 code/captures
 code/.externalNativeBuild
 code/.cxx
-code/gradle
 .DS_Store
