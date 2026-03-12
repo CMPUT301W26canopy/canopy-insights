@@ -104,7 +104,9 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_add"
             android:contentDescription="Create"
-            android:padding="16dp" />
+            android:padding="16dp"
+            android:clickable="true"
+            android:focusable="true"/>
 
         <ImageButton
             android:id="@+id/navHistory"

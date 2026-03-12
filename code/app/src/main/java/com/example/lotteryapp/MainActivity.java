@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -146,8 +147,11 @@ public class MainActivity extends AppCompatActivity {
     private void setupBottomNav() {
         findViewById(R.id.navHome).setOnClickListener(v -> {});
 
-        findViewById(R.id.navCreate).setOnClickListener(v ->
-                Toast.makeText(this, "Create Event — coming soon", Toast.LENGTH_SHORT).show());
+        findViewById(R.id.navCreate).setOnClickListener(v ->{
+            Log.d("DEBUG", "navCreate clicked");
+            Intent intent = new Intent(MainActivity.this, CreateEventActivity.class);
+            startActivity(intent);
+        });
 
         findViewById(R.id.navHistory).setOnClickListener(v ->
                 //HistoryActivity
