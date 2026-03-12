@@ -5,7 +5,10 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,7 +29,11 @@ public class EventActivity extends AppCompatActivity {
     private final List<String> eventDetailsList = new ArrayList<>();
     private RecyclerView eventDescDisplay;
     private SimpleTextAdapter adapter;
-
+    private LinearLayout linearLayout;
+    private ImageButton backBtnTop;
+    private TextView costHeading;
+    private TextView eventHeading;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,12 +43,29 @@ public class EventActivity extends AppCompatActivity {
         eventDescDisplay = findViewById(R.id.event_details);
         eventDescDisplay.setLayoutManager(new LinearLayoutManager(this));
         
-        // Initialize the adapter and attach it
+        //Initialize the adapter
         adapter = new SimpleTextAdapter(eventDetailsList);
         eventDescDisplay.setAdapter(adapter);
+
+        //Initialize the linear layout to fix error
+        linearLayout = findViewById(R.id.event_details_container);
+
+        // Initialize the other views so they can be accessed properly in other methods
+        costHeading = findViewById(R.id.cost_view);
+        eventHeading = findViewById(R.id.event_heading);
+
+        //Connect top button to go back to main activity
+        backBtnTop = findViewById(R.id.back_btn_top);   
+        if (backBtnTop != null) {
+            backBtnTop.setOnClickListener(v -> finish());
+        }
+
+        
         
         ImageView eventImage = findViewById(R.id.event_image);
-        eventImage.setImageResource(R.mipmap.ic_launcher);
+        if (eventImage != null) {
+            eventImage.setImageResource(R.mipmap.ic_launcher);
+        }
 
         // Receive event ID from MainActivity
         Intent intent = getIntent();
@@ -51,7 +75,7 @@ public class EventActivity extends AppCompatActivity {
                  loadEventDetails(eventId);
              }
         }
-
+        
         setupBottomNav();
     }
 
@@ -61,12 +85,22 @@ public class EventActivity extends AppCompatActivity {
                 .addOnSuccessListener(documentSnapshot -> {
                     EventModel event = documentSnapshot.toObject(EventModel.class);
                     if (event != null) {
+                        // Set list to view details
                         eventDetailsList.clear();
                         eventDetailsList.add("Event: " + event.getName());
-                        eventDetailsList.add("Location: " + event.getLocation());
+                        eventDetailsList.add("Total Spots: " + event.getTotalSpots());
+                        eventDetailsList.add("Current Waiting List: " + event.getWaitingList());
                         eventDetailsList.add("Price: $" + (int)event.getPrice());
-                        eventDetailsList.add("Waitlist: " + event.getWaitingList());
+                        eventDetailsList.add("Age Group: " + event.getAgeGroup());
+
+                        eventDetailsList.add("Location: " + event.getLocation());
+                        eventDetailsList.add("Date: " + event.getDate());
+
+
                         
+                        // Set non-list details to display correct info
+                        costHeading.setText("$ "+ (int)event.getPrice());
+                        eventHeading.setText(event.getName());
                         // Refresh the RecyclerView
                         adapter.notifyDataSetChanged();
                     }
