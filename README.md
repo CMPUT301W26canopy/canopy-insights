@@ -1,5 +1,9 @@
 # canopy-insights
 
+# About this project: 
+
+This app alows users to sign up and login an account where they can register for events that uses a lottery system to decide participation. Organizers can make thier specifications, and let users enter the lottery, where if chosen, they can decline or accept the invitation to the event.
+
 Documentation:
 
 [Link to our Wiki](https://github.com/CMPUT301W26canopy/canopy-insights/wiki)
@@ -10,8 +14,8 @@ Documentation:
 
 ### Logging in and updating account
 
-<video width="500" controls src="https://github.com/CMPUT301W26canopy/canopy-insights/raw/main/doc/pt3Videos/signInUpdate.mp4"></video>
+"https://github.com/CMPUT301W26canopy/canopy-insights/raw/main/doc/pt3Videos/signInUpdate.mp4"
 
 ### Check update and delete
 
-<video width="500" controls src="https://github.com/CMPUT301W26canopy/canopy-insights/raw/main/doc/pt3Videos/updateCheckAndDelete.mp4"></video>
+"https://github.com/CMPUT301W26canopy/canopy-insights/raw/main/doc/pt3Videos/updateCheckAndDelete.mp4"
