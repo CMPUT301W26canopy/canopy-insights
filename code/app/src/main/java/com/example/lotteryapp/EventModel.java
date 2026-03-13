@@ -2,11 +2,10 @@ package com.example.lotteryapp;
 
 /**
  * Represents a single event stored in Firestore.
- * Each field maps to a Firestore document field.
  */
 public class EventModel {
 
-    private String id;          // Firestore document ID
+    private String id;
     private String name;
     private String date;
     private String ageGroup;
@@ -16,7 +15,6 @@ public class EventModel {
     private int waitingList;
     private String organizerId;
 
-    // Firestore requires an empty constructor to deserialize documents
     public EventModel() {}
 
     public EventModel(String name, String date, String ageGroup, String location,

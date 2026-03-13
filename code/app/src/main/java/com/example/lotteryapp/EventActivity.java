@@ -22,7 +22,7 @@ import java.util.List;
 
 /**
  * Screen showing the event details.
- * Loads details from firestore and allows users to join/leave waiting list.
+ * Reverted to original state to prevent Firestore crashes.
  */
 public class EventActivity extends AppCompatActivity {
 
@@ -59,8 +59,6 @@ public class EventActivity extends AppCompatActivity {
         if (backBtnTop != null) {
             backBtnTop.setOnClickListener(v -> finish());
         }
-
-        
         
         ImageView eventImage = findViewById(R.id.event_image);
         if (eventImage != null) {
@@ -92,12 +90,9 @@ public class EventActivity extends AppCompatActivity {
                         eventDetailsList.add("Current Waiting List: " + event.getWaitingList());
                         eventDetailsList.add("Price: $" + (int)event.getPrice());
                         eventDetailsList.add("Age Group: " + event.getAgeGroup());
-
                         eventDetailsList.add("Location: " + event.getLocation());
                         eventDetailsList.add("Date: " + event.getDate());
 
-
-                        
                         // Set non-list details to display correct info
                         costHeading.setText("$ "+ (int)event.getPrice());
                         eventHeading.setText(event.getName());
