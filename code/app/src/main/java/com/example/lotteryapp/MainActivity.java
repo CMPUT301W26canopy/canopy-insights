@@ -149,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
 
         findViewById(R.id.navCreate).setOnClickListener(v ->{
             Log.d("DEBUG", "navCreate clicked");
-            Intent intent = new Intent(MainActivity.this, CreateEventActivity.class);
+            Intent intent = new Intent(MainActivity.this, OrganizerActivity.class);
             startActivity(intent);
         });
 
@@ -159,7 +159,6 @@ public class MainActivity extends AppCompatActivity {
 
         findViewById(R.id.navProfile).setOnClickListener(v ->{
                 //ProfileActivity
-               // Toast.makeText(this, "Profile — coming soon", Toast.LENGTH_SHORT).show());
             Intent intent = new Intent(MainActivity.this, LoginActivity.class);
             startActivity(intent);
 

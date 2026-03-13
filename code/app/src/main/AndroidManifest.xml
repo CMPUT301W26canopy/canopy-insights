@@ -37,6 +37,10 @@
             android:name=".ProfileActivity"
             android:exported="false" />
 
+        <activity android:name=".OrganizerActivity" android:exported="false"/>
+
+        <activity android:name=".ApplicantsActivity" android:exported="false"/>
+
     </application>
 
 </manifest>

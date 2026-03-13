@@ -16,7 +16,6 @@ import androidx.annotation.Nullable;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
 /**
- * Bottom sheet dialog for filtering the event feed.
  * Passes filter values back to MainActivity through FilterCallback
  */
 public class FilterBottomSheet extends BottomSheetDialogFragment {
