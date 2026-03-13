@@ -24,14 +24,19 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.lotteryapp.FirestoreHelper;
+import com.example.lotteryapp.NotificationModel;
 import com.example.lotteryapp.ProfileModel;
 import com.example.lotteryapp.databinding.FragmentSignUpBinding;
 
 import com.example.lotteryapp.R;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class SignUpFragment extends Fragment {
 
@@ -145,12 +150,12 @@ public class SignUpFragment extends Fragment {
 
         // Safely check if username already exists
         FirestoreHelper.getDb().collection("accounts")
-                .document(username)
+                .whereEqualTo("username", username)
                 .get()
-                .addOnSuccessListener(documentSnapshot -> {
+                .addOnSuccessListener(queryDocumentSnapshots -> {
                     if (!isAdded() || binding == null) return;
 
-                    if (documentSnapshot.exists()) {
+                    if (!queryDocumentSnapshots.isEmpty()) {
                         binding.loading.setVisibility(View.GONE);
                         Toast.makeText(getContext(), "Username is already taken!", Toast.LENGTH_SHORT).show();
                     } else {
@@ -168,31 +173,89 @@ public class SignUpFragment extends Fragment {
         ProfileModel profile = new ProfileModel();
         profile.setUsername(username);
         profile.setPassword(password);
-        profile.setAccountID(username);
-        
+        String timestamp = new SimpleDateFormat("MMddHHmmss", Locale.getDefault()).format(new Date());
+        profile.setAccountID(timestamp);
+
         FirestoreHelper.getDb().collection("accounts")
-                .document(username)
+                .whereEqualTo("username", "System")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!isAdded() || binding == null) return;
+
+                    String systemAccountID;
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        systemAccountID = queryDocumentSnapshots.getDocuments().get(0).getId();
+                    } else {
+                        // Fallback if System user doesn't exist yet
+                        systemAccountID = "SYSTEM_DEFAULT";
+                    }
+
+                    NotificationModel notification = new NotificationModel();
+                    notification.setSenderAccountID(systemAccountID);
+                    notification.setReceiverAccountID(profile.getAccountID());
+                    notification.setMessage("Welcome to Lottery App!");
+                    notification.setTimestamp(timestamp);
+
+                    saveUserAndNotification(profile, notification);
+                })
+                .addOnFailureListener(e -> {
+                    // If query fails, proceed with a default sender ID
+                    NotificationModel notification = new NotificationModel();
+                    notification.setSenderAccountID("SYSTEM_DEFAULT");
+                    notification.setReceiverAccountID(profile.getAccountID());
+                    notification.setMessage("Welcome to Lottery App!");
+                    notification.setTimestamp(timestamp);
+
+                    saveUserAndNotification(profile, notification);
+                });
+    }
+
+    private void saveUserAndNotification(ProfileModel profile, NotificationModel notification) {
+        FirestoreHelper.getDb().collection("accounts")
+                .document(profile.getAccountID())
                 .set(profile)
                 .addOnSuccessListener(aVoid -> {
-                    if (!isAdded() || binding == null) return;
-                    
-                    binding.loading.setVisibility(View.GONE);
-                    Toast.makeText(getContext(), "Account created successfully!", Toast.LENGTH_SHORT).show();
+                    // Create a list and add the notification to it
+                    List<NotificationModel> notificationList = new ArrayList<>();
+                    notificationList.add(notification);
 
-                    // Safely start ProfileActivity
-                    Context context = getContext();
-                    if (context != null) {
-                        Intent intent = new Intent(context, com.example.lotteryapp.ProfileActivity.class);
-                        intent.putExtra("accountID", username);
-                        startActivity(intent);
-                        if (getActivity() != null) getActivity().finish();
-                    }
+                    // Create a data map to hold the list
+                    Map<String, Object> notifData = new HashMap<>();
+                    notifData.put("notificationList", notificationList);
+
+                    // Save to 'notifications' collection, document identified by accountID
+                    FirestoreHelper.getDb().collection("notifications")
+                            .document(profile.getAccountID())
+                            .set(notifData)
+                            .addOnSuccessListener(aVoidNotif -> {
+                                if (!isAdded() || binding == null) return;
+                                binding.loading.setVisibility(View.GONE);
+                                Toast.makeText(getContext(), "Account created successfully!", Toast.LENGTH_SHORT).show();
+                                navigateToProfile(profile.getAccountID());
+                            })
+                            .addOnFailureListener(e -> {
+                                if (!isAdded() || binding == null) return;
+                                binding.loading.setVisibility(View.GONE);
+                                Toast.makeText(getContext(), "Failed to save welcome notification", Toast.LENGTH_SHORT).show();
+                                // Still navigate even if notification fails
+                                navigateToProfile(profile.getAccountID());
+                            });
                 })
                 .addOnFailureListener(e -> {
                     if (!isAdded() || binding == null) return;
                     binding.loading.setVisibility(View.GONE);
                     Toast.makeText(getContext(), "Error creating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    private void navigateToProfile(String accountID) {
+        Context context = getContext();
+        if (context != null) {
+            Intent intent = new Intent(context, com.example.lotteryapp.ProfileActivity.class);
+            intent.putExtra("accountID", accountID);
+            startActivity(intent);
+            if (getActivity() != null) getActivity().finish();
+        }
     }
 
     private void updateUiWithUser(LoggedInUserView model) {
