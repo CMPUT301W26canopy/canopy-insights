@@ -10,12 +10,8 @@ Documentation:
 
 ### Logging in and updating account
 
-<video width="500" controls>
-  <source src="https://raw.githubusercontent.com/CMPUT301W26canopy/canopy-insights/main/doc/pt3Videos/signInUpdate.mp4" type="video/mp4">
-</video>
+<video width="500" controls src="https://github.com/CMPUT301W26canopy/canopy-insights/raw/main/doc/pt3Videos/signInUpdate.mp4"></video>
 
 ### Check update and delete
 
-<video width="500" controls>
-  <source src="https://raw.githubusercontent.com/CMPUT301W26canopy/canopy-insights/main/doc/pt3Videos/updateCheckAndDelete.mp4" type="video/mp4">
-</video>
+<video width="500" controls src="https://github.com/CMPUT301W26canopy/canopy-insights/raw/main/doc/pt3Videos/updateCheckAndDelete.mp4"></video>
