@@ -9,6 +9,7 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,6 +27,7 @@ public class ProfileActivity extends AppCompatActivity {
     private Button updateButton;
     private Button deleteButton;
     private Button signOutButton;
+    private ImageButton inboxButton;
 
     private EditText nameInput;
     private EditText emailInput;
@@ -52,6 +54,7 @@ public class ProfileActivity extends AppCompatActivity {
         updateButton = findViewById(R.id.update_button);
         deleteButton = findViewById(R.id.delete_account_btn);
         signOutButton = findViewById(R.id.sign_out_btn);
+        inboxButton = findViewById(R.id.inbox_button);
 
         // Connect EditTexts
         nameInput = findViewById(R.id.name_provided);
@@ -74,6 +77,21 @@ public class ProfileActivity extends AppCompatActivity {
         // Set up bottom navigation
         setupBottomNav();
 
+        // Inbox Button logic - FIXED: Now passing accountID to fragment
+        if (inboxButton != null) {
+            inboxButton.setOnClickListener(v -> {
+                if (accountID != null) {
+                    InboxFragment fragment = InboxFragment.newInstance(accountID);
+                    getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, fragment)
+                            .addToBackStack(null)
+                            .commit();
+                } else {
+                    Toast.makeText(this, "Error: User ID not loaded", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
         // Cancel Button - Revert to original data
         if (cancelButton != null) {
             cancelButton.setOnClickListener(v -> revertChanges());
@@ -87,8 +105,6 @@ public class ProfileActivity extends AppCompatActivity {
         // Delete Button
         if (deleteButton != null) {
             deleteButton.setOnClickListener(v -> {
-                // will delete the profile
-                //Toast.makeText(this, "Feature not available yet", Toast.LENGTH_SHORT).show();
                 deleteProfile();
             });
         }
@@ -109,8 +125,6 @@ public class ProfileActivity extends AppCompatActivity {
                 .addOnSuccessListener(aVoid -> {
                     if (isFinishing()) return;
                     Toast.makeText(this, "Profile deleted successfully", Toast.LENGTH_LONG).show();
-                    
-                    // Navigate back to Login/Main or exit
                     finish();
                 })
                 .addOnFailureListener(e -> {
@@ -122,14 +136,12 @@ public class ProfileActivity extends AppCompatActivity {
     private void revertChanges() {
         if (usernameInput == null || nameInput == null || emailInput == null || phoneInput == null) return;
 
-        // Restore original values to EditTexts
         usernameInput.setText(originalUsername);
         nameInput.setText(originalName);
         emailInput.setText(originalEmail);
         phoneInput.setText(originalPhone);
         
         Toast.makeText(this, "Changes discarded", Toast.LENGTH_SHORT).show();
-        
         checkForChanges();
     }
 
@@ -151,7 +163,7 @@ public class ProfileActivity extends AppCompatActivity {
                         "phoneNumber", newPhone
                 )
                 .addOnSuccessListener(aVoid -> {
-                    if (isFinishing()) return; // Prevent crash if activity was closed
+                    if (isFinishing()) return;
                     
                     Toast.makeText(this, "Profile updated successfully!", Toast.LENGTH_SHORT).show();
                     
@@ -216,7 +228,7 @@ public class ProfileActivity extends AppCompatActivity {
         FirestoreHelper.getDb().collection("accounts").document(accountID)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
-                    if (isFinishing()) return; // Safety check
+                    if (isFinishing()) return;
 
                     if (documentSnapshot.exists()) {
                         ProfileModel profile = documentSnapshot.toObject(ProfileModel.class);
@@ -246,8 +258,6 @@ public class ProfileActivity extends AppCompatActivity {
         findViewById(R.id.navHome).setOnClickListener(v -> {
             Intent intent = new Intent(ProfileActivity.this, MainActivity.class);
             startActivity(intent);
-
-
         });
 
         findViewById(R.id.navCreate).setOnClickListener(v ->{
@@ -257,14 +267,10 @@ public class ProfileActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.navHistory).setOnClickListener(v ->
-                //HistoryActivity
                 Toast.makeText(this, "History — coming soon", Toast.LENGTH_SHORT).show());
 
         findViewById(R.id.navProfile).setOnClickListener(v ->{
-            //ProfileActivity
             Toast.makeText(this, "Already on profile", Toast.LENGTH_SHORT).show();
-
-
         });
     }
 }
