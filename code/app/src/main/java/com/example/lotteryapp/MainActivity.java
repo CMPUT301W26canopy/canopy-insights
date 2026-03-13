@@ -52,8 +52,8 @@ public class MainActivity extends AppCompatActivity {
         setupBottomNav();
         ImageButton btnQr = findViewById(R.id.btnQrScanner);
         btnQr.setOnClickListener(v -> {
-            //QRScannerActivity
-            Toast.makeText(this, "QR Scanner coming soon", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(MainActivity.this, QRScannerActivity.class);
+            startActivity(intent);
         });
     }
     // pulls all events from the Firestore collection

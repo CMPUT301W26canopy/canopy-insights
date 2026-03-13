@@ -1,6 +1,7 @@
 package com.example.lotteryapp;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,13 +30,12 @@ public class EventActivity extends AppCompatActivity {
     private SimpleTextAdapter adapter;
     private TextView costHeading;
     private TextView eventHeading;
-
+    private ImageView qrCodeView;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.view_event);
-
-        // Reference the RecyclerView and set LayoutManager
         RecyclerView eventDescDisplay = findViewById(R.id.event_details);
         if (eventDescDisplay != null) {
             eventDescDisplay.setLayoutManager(new LinearLayoutManager(this));
@@ -44,11 +44,8 @@ public class EventActivity extends AppCompatActivity {
             eventDescDisplay.setAdapter(adapter);
         }
 
-        // Initialize the other views
         costHeading = findViewById(R.id.cost_view);
         eventHeading = findViewById(R.id.event_heading);
-
-        // Connect top button to go back to main activity
         ImageButton backBtnTop = findViewById(R.id.back_btn_top);
         if (backBtnTop != null) {
             backBtnTop.setOnClickListener(v -> finish());
@@ -59,7 +56,7 @@ public class EventActivity extends AppCompatActivity {
             eventImage.setImageResource(R.mipmap.ic_launcher);
         }
 
-        // Receive event ID from MainActivity
+       
         Intent intent = getIntent();
         if (intent != null) {
             String eventId = intent.getStringExtra("EVENT_ID");
@@ -69,6 +66,7 @@ public class EventActivity extends AppCompatActivity {
         }
 
         setupBottomNav();
+        qrCodeView = findViewById(R.id.event_qr_code);
     }
 
     private void loadEventDetails(String eventId) {
@@ -77,7 +75,6 @@ public class EventActivity extends AppCompatActivity {
                 .addOnSuccessListener(documentSnapshot -> {
                     EventModel event = documentSnapshot.toObject(EventModel.class);
                     if (event != null) {
-                        // Set list to view details
                         eventDetailsList.clear();
                         eventDetailsList.add("Event: " + event.getName());
                         eventDetailsList.add("Total Spots: " + event.getTotalSpots());
@@ -87,7 +84,6 @@ public class EventActivity extends AppCompatActivity {
                         eventDetailsList.add("Location: " + event.getLocation());
                         eventDetailsList.add("Date: " + event.getDate());
 
-                        // Set non-list details to display correct info
                         if (costHeading != null) {
                             costHeading.setText(String.format(Locale.getDefault(), "$ %d", (int) event.getPrice()));
                         }
@@ -96,14 +92,21 @@ public class EventActivity extends AppCompatActivity {
                         }
 
                         // Refresh the RecyclerView
-                        if (adapter != null) {
-                            adapter.notifyDataSetChanged();
+                        adapter.notifyDataSetChanged();
+                        
+                        if (qrCodeView != null) {
+                            Bitmap qr = QRCodeHelper.generateQRCode(eventId); // use eventId from Firestore
+                            if (qr != null) {
+                                qrCodeView.setImageBitmap(qr);
+                                qrCodeView.setVisibility(View.VISIBLE);
+                            }
                         }
                     }
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Error loading event", Toast.LENGTH_SHORT).show()
                 );
+
     }
 
     private void setupBottomNav() {
@@ -132,9 +135,7 @@ public class EventActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Simple Adapter as an Inner Class to avoid creating a new file.
-     */
+ 
     private static class SimpleTextAdapter extends RecyclerView.Adapter<SimpleTextAdapter.ViewHolder> {
         private final List<String> data;
 

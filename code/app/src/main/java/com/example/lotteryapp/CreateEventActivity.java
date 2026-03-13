@@ -5,6 +5,7 @@ import com.google.zxing.BarcodeFormat;
 import com.journeyapps.barcodescanner.BarcodeEncoder;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -100,13 +101,16 @@ public class CreateEventActivity extends AppCompatActivity {
         db.collection("events")
                 .add(event)
                 .addOnSuccessListener(docRef -> {
-                    String eventId = docRef.getId();
+                    String eventId = docRef.getId();   // Firestore document ID
+                    Bitmap qr = QRCodeHelper.generateQRCode(eventId);
+                    if (qr != null) {
+                        eventQRCode.setImageBitmap(qr);
+                        eventQRCode.setVisibility(View.VISIBLE);
+                    } else {
+                        Toast.makeText(this, "QR code generation failed", Toast.LENGTH_SHORT).show();
+                    }
 
-                    // TODO: remove this toast once testing is done
-                    Toast.makeText(this, "Event ID: " + eventId, Toast.LENGTH_LONG).show();
-
-                    Bitmap qr = generateQRCode(eventId);
-                    eventQRCode.setImageBitmap(qr);
+                // Change button to Done regardless
                     eventCreated = true;
                     createEventButton.setText("Done");
                     Toast.makeText(this, "Event created! QR code generated.", Toast.LENGTH_SHORT).show();
@@ -114,15 +118,5 @@ public class CreateEventActivity extends AppCompatActivity {
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to create event: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
-    }
-
-    private Bitmap generateQRCode(String eventId) {
-        try {
-            BarcodeEncoder encoder = new BarcodeEncoder();
-            return encoder.encodeBitmap(eventId, BarcodeFormat.QR_CODE, 400, 400);
-        } catch (Exception e) {
-            Log.e("QR", "QR generation failed", e);
-            return null;
-        }
     }
 }
