@@ -7,6 +7,8 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.fragment.app.Fragment;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -21,9 +23,15 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.lotteryapp.FirestoreHelper;
+import com.example.lotteryapp.ProfileModel;
 import com.example.lotteryapp.databinding.FragmentSignUpBinding;
 
 import com.example.lotteryapp.R;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class SignUpFragment extends Fragment {
 
@@ -47,7 +55,7 @@ public class SignUpFragment extends Fragment {
         loginViewModel = new ViewModelProvider(this, new LoginViewModelFactory())
                 .get(LoginViewModel.class);
 
-        final EditText usernameEditText = binding.username;
+        final EditText usernameEditText = binding.usernameProvided;
         final EditText passwordEditText = binding.password;
         final Button registerButton = binding.register;
         final ProgressBar loadingProgressBar = binding.loading;
@@ -108,8 +116,7 @@ public class SignUpFragment extends Fragment {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    loginViewModel.login(usernameEditText.getText().toString(),
-                            passwordEditText.getText().toString());
+                    addToFireStore();
                 }
                 return false;
             }
@@ -118,28 +125,91 @@ public class SignUpFragment extends Fragment {
         registerButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                loadingProgressBar.setVisibility(View.VISIBLE);
-                loginViewModel.login(usernameEditText.getText().toString(),
-                        passwordEditText.getText().toString());
+                addToFireStore();
             }
         });
     }
 
-    private void updateUiWithUser(LoggedInUserView model) {
-        String welcome = getString(R.string.welcome) + model.getDisplayName();
-        // TODO : initiate successful logged in experience
-        if (getContext() != null && getContext().getApplicationContext() != null) {
-            Toast.makeText(getContext().getApplicationContext(), welcome, Toast.LENGTH_LONG).show();
+    private void addToFireStore() {
+        if (binding == null) return;
+
+        String username = binding.usernameProvided.getText().toString().trim();
+        String password = binding.password.getText().toString().trim();
+
+        if (username.isEmpty() || password.isEmpty()) {
+            Toast.makeText(getContext(), "Username or password cannot be empty", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        binding.loading.setVisibility(View.VISIBLE);
+
+        // Safely check if username already exists
+        FirestoreHelper.getDb().collection("accounts")
+                .document(username)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (!isAdded() || binding == null) return;
+
+                    if (documentSnapshot.exists()) {
+                        binding.loading.setVisibility(View.GONE);
+                        Toast.makeText(getContext(), "Username is already taken!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        performRegistration(username, password);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (!isAdded() || binding == null) return;
+                    binding.loading.setVisibility(View.GONE);
+                    Toast.makeText(getContext(), "Database error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void performRegistration(String username, String password) {
+        ProfileModel profile = new ProfileModel();
+        profile.setUsername(username);
+        profile.setPassword(password);
+        profile.setAccountID(username);
+        
+        FirestoreHelper.getDb().collection("accounts")
+                .document(username)
+                .set(profile)
+                .addOnSuccessListener(aVoid -> {
+                    if (!isAdded() || binding == null) return;
+                    
+                    binding.loading.setVisibility(View.GONE);
+                    Toast.makeText(getContext(), "Account created successfully!", Toast.LENGTH_SHORT).show();
+
+                    // Safely start ProfileActivity
+                    Context context = getContext();
+                    if (context != null) {
+                        Intent intent = new Intent(context, com.example.lotteryapp.ProfileActivity.class);
+                        intent.putExtra("accountID", username);
+                        startActivity(intent);
+                        if (getActivity() != null) getActivity().finish();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (!isAdded() || binding == null) return;
+                    binding.loading.setVisibility(View.GONE);
+                    Toast.makeText(getContext(), "Error creating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void updateUiWithUser(LoggedInUserView model) {
+        if (!isAdded()) return;
+        Context context = getContext();
+        if (context == null) return;
+
+        String welcome = context.getString(R.string.welcome) + model.getDisplayName();
+        Toast.makeText(context.getApplicationContext(), welcome, Toast.LENGTH_LONG).show();
     }
 
     private void showLoginFailed(@StringRes Integer errorString) {
-        if (getContext() != null && getContext().getApplicationContext() != null) {
-            Toast.makeText(
-                    getContext().getApplicationContext(),
-                    errorString,
-                    Toast.LENGTH_LONG).show();
-        }
+        if (!isAdded()) return;
+        Context context = getContext();
+        if (context == null) return;
+
+        Toast.makeText(context.getApplicationContext(), errorString, Toast.LENGTH_LONG).show();
     }
 
     @Override

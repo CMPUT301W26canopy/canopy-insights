@@ -47,7 +47,7 @@ public class LoginFragment extends Fragment {
         loginViewModel = new ViewModelProvider(this, new LoginViewModelFactory())
                 .get(LoginViewModel.class);
 
-        final EditText usernameEditText = binding.username;
+        final EditText usernameEditText = binding.usernameProvided;
         final EditText passwordEditText = binding.password;
         final Button loginButton = binding.login;
         final ProgressBar loadingProgressBar = binding.loading;
@@ -118,19 +118,67 @@ public class LoginFragment extends Fragment {
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                loadingProgressBar.setVisibility(View.VISIBLE);
-                loginViewModel.login(usernameEditText.getText().toString(),
-                        passwordEditText.getText().toString());
+                checkLoginValid();
             }
         });
     }
 
-    private void updateUiWithUser(LoggedInUserView model) {
-        String welcome = getString(R.string.welcome) + model.getDisplayName();
-        // TODO : initiate successful logged in experience
-        if (getContext() != null && getContext().getApplicationContext() != null) {
-            Toast.makeText(getContext().getApplicationContext(), welcome, Toast.LENGTH_LONG).show();
+
+    // Used Gemini to help with this function 02-13-26, 'how can I use checkLoginValic to see if the person entered the right credentials ?'
+    private void checkLoginValid() {
+        if (binding == null) return;
+
+        String inputUsername = binding.usernameProvided.getText().toString().trim();
+        String inputPassword = binding.password.getText().toString().trim();
+
+        if (inputUsername.isEmpty() || inputPassword.isEmpty()) {
+            Toast.makeText(getContext(), "Please enter both username and password", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        binding.loading.setVisibility(View.VISIBLE);
+
+        // Query Firestore to find a user with the matching username
+        com.example.lotteryapp.FirestoreHelper.getDb().collection("accounts")
+                .whereEqualTo("username", inputUsername)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (binding == null) return;
+                    binding.loading.setVisibility(View.GONE);
+
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        // We found at least one document with this username
+                        com.google.firebase.firestore.DocumentSnapshot userDoc = queryDocumentSnapshots.getDocuments().get(0);
+                        com.example.lotteryapp.ProfileModel userProfile = userDoc.toObject(com.example.lotteryapp.ProfileModel.class);
+
+                        if (userProfile != null && inputPassword.equals(userProfile.getPassword())) {
+                            // Password matches
+                           // updateUiWithUser(new LoggedInUserView(userProfile.getUsername()));
+
+                            // Navigate to profile activity
+                            android.content.Intent intent = new android.content.Intent(getActivity(), com.example.lotteryapp.ProfileActivity.class);
+                            intent.putExtra("accountID", userProfile.getAccountID());
+                            startActivity(intent);
+                            if (getActivity() != null) getActivity().finish();
+
+                        } else {
+                            // Password does not match
+                            Toast.makeText(getContext(), "Incorrect password", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        // No user found with that username
+                        Toast.makeText(getContext(), "Username not found", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (binding == null) return;
+                    binding.loading.setVisibility(View.GONE);
+                    Toast.makeText(getContext(), "Login Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void updateUiWithUser(LoggedInUserView model) {
+        // No toast yet
     }
 
     private void showLoginFailed(@StringRes Integer errorString) {
