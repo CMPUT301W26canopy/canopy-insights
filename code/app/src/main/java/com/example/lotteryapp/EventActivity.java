@@ -1,6 +1,7 @@
 package com.example.lotteryapp;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -33,6 +34,7 @@ public class EventActivity extends AppCompatActivity {
     private ImageButton backBtnTop;
     private TextView costHeading;
     private TextView eventHeading;
+    private ImageView qrCodeView;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +79,7 @@ public class EventActivity extends AppCompatActivity {
         }
         
         setupBottomNav();
+        qrCodeView = findViewById(R.id.event_qr_code);
     }
 
     private void loadEventDetails(String eventId) {
@@ -103,11 +106,21 @@ public class EventActivity extends AppCompatActivity {
                         eventHeading.setText(event.getName());
                         // Refresh the RecyclerView
                         adapter.notifyDataSetChanged();
+                        // After loading the event
+                        // Generate QR code here
+                        if (qrCodeView != null) {
+                            Bitmap qr = QRCodeHelper.generateQRCode(eventId); // use eventId from Firestore
+                            if (qr != null) {
+                                qrCodeView.setImageBitmap(qr);
+                                qrCodeView.setVisibility(View.VISIBLE);
+                            }
+                        }
                     }
                 })
                 .addOnFailureListener(e -> 
                     Toast.makeText(this, "Error loading event", Toast.LENGTH_SHORT).show()
                 );
+
     }
 
     private void setupBottomNav() {
