@@ -1,9 +1,14 @@
 package com.example.lotteryapp;
 
+import android.graphics.Bitmap;
+import com.google.zxing.BarcodeFormat;
+import com.journeyapps.barcodescanner.BarcodeEncoder;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,6 +23,8 @@ public class CreateEventActivity extends AppCompatActivity {
     EditText eventNameInput, eventLocationInput, eventPriceInput, eventDescriptionInput,
             eventDateInput, eventTotalSpotsInput;
     Button createEventButton;
+    ImageView eventQRCode;
+    private boolean eventCreated = false;
 
     FirebaseFirestore db;
 
@@ -36,13 +43,20 @@ public class CreateEventActivity extends AppCompatActivity {
         eventDateInput = findViewById(R.id.eventDateInput);
         eventTotalSpotsInput = findViewById(R.id.eventTotalSpotsInput);
         createEventButton = findViewById(R.id.createEventButton);
+        eventQRCode = findViewById(R.id.eventQRCode);
 
         // back button
         ImageButton btnBack = findViewById(R.id.btnBack);
         btnBack.setOnClickListener(v -> finish());
 
         // create event button
-        createEventButton.setOnClickListener(v -> createEvent());
+        createEventButton.setOnClickListener(v -> {
+            if (!eventCreated) {
+                createEvent();   // first press creates event
+            } else {
+                finish();        // second press returns to main screen
+            }
+        });
     }
 
     private void createEvent() {
@@ -87,18 +101,39 @@ public class CreateEventActivity extends AppCompatActivity {
         event.put("date", date);
         event.put("totalSpots", totalSpots);
         event.put("waitingList", 0); // default empty waiting list
-        event.put("ageGroup", "All Ages"); // optional default
-        event.put("organizerId", ""); // optional placeholder
+        event.put("ageGroup", "All Ages"); // default
+        event.put("organizerId", ""); // placeholder
 
         // add to Firestore
         db.collection("events")
                 .add(event)
                 .addOnSuccessListener(docRef -> {
-                    Toast.makeText(this, "Event created!", Toast.LENGTH_SHORT).show();
-                    finish(); // go back to main screen
+                    String eventId = docRef.getId();   // Firestore document ID
+                    Bitmap qr = generateQRCode(eventId); // Generate QR code based off ID
+                    eventQRCode.setImageBitmap(qr); // Display QR
+                    eventCreated = true;
+                    createEventButton.setText("Done");
+
+                    Toast.makeText(this, "Event created! QR code generated.", Toast.LENGTH_SHORT).show();
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to create event: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
+    }
+    private Bitmap generateQRCode(String eventId) {
+
+        try {
+            BarcodeEncoder encoder = new BarcodeEncoder();
+            Bitmap bitmap = encoder.encodeBitmap(
+                    eventId,
+                    BarcodeFormat.QR_CODE,
+                    400,
+                    400
+            );
+            return bitmap;
+        } catch (Exception e) {
+            Log.e("QR_GENERATION", "QR generation failed", e);
+            return null;
+        }
     }
 }

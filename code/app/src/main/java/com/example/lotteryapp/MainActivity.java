@@ -157,8 +157,12 @@ public class MainActivity extends AppCompatActivity {
                 //HistoryActivity
                 Toast.makeText(this, "History — coming soon", Toast.LENGTH_SHORT).show());
 
-        findViewById(R.id.navProfile).setOnClickListener(v ->
+        findViewById(R.id.navProfile).setOnClickListener(v ->{
                 //ProfileActivity
-                Toast.makeText(this, "Profile — coming soon", Toast.LENGTH_SHORT).show());
+               // Toast.makeText(this, "Profile — coming soon", Toast.LENGTH_SHORT).show());
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            startActivity(intent);
+
+        });
     }
 }
