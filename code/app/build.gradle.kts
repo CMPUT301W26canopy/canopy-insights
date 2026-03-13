@@ -48,6 +48,8 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test:runner:1.6.1")
     implementation(libs.zxing.core)
     implementation(libs.zxing.android)
     implementation("androidx.recyclerview:recyclerview:1.4.0")
