@@ -5,7 +5,6 @@
     android:orientation="vertical"
     android:layout_marginBottom="20dp">
 
-    <!-- event photo placeholder -->
     <ImageView
         android:id="@+id/ivEventPhoto"
         android:layout_width="match_parent"
@@ -14,7 +13,6 @@
         android:scaleType="centerCrop"
         android:contentDescription="Event Photo" />
 
-    <!-- event name and date -->
     <TextView
         android:id="@+id/tvEventName"
         android:layout_width="match_parent"
@@ -24,7 +22,6 @@
         android:textStyle="bold"
         android:textColor="#000000" />
 
-    <!-- age group and location -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -47,7 +44,6 @@
             android:textColor="#888888" />
     </LinearLayout>
 
-    <!-- price, stats, view button -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -63,7 +59,6 @@
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="#000000" />
-
         <TextView
             android:id="@+id/tvStats"
             android:layout_width="0dp"
@@ -84,7 +79,6 @@
             android:paddingEnd="20dp"
             android:textSize="14sp" />
     </LinearLayout>
-
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"

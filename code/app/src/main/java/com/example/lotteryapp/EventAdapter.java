@@ -12,10 +12,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
 
-/**
- * Adapter for the event feed RecyclerView.
- * Binds EventModel data to each card in the list.
- */
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> {
 
     // callback so MainActivity knows when View is clicked

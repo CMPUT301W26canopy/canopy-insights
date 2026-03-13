@@ -4,9 +4,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-
-
-    <!-- Top bar -->
     <LinearLayout
         android:id="@+id/linearLayout"
         android:layout_width="match_parent"
@@ -44,7 +41,6 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- bottom navigation -->
     <LinearLayout
         android:id="@+id/bot_nav"
         android:layout_width="match_parent"

@@ -35,7 +35,6 @@ public class CreateEventActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
 
-        // find views
         eventNameInput = findViewById(R.id.eventNameInput);
         eventLocationInput = findViewById(R.id.eventLocationInput);
         eventPriceInput = findViewById(R.id.eventPriceInput);
@@ -45,22 +44,19 @@ public class CreateEventActivity extends AppCompatActivity {
         createEventButton = findViewById(R.id.createEventButton);
         eventQRCode = findViewById(R.id.eventQRCode);
 
-        // back button
         ImageButton btnBack = findViewById(R.id.btnBack);
         btnBack.setOnClickListener(v -> finish());
 
-        // create event button
         createEventButton.setOnClickListener(v -> {
             if (!eventCreated) {
-                createEvent();   // first press creates event
+                createEvent();
             } else {
-                finish();        // second press returns to main screen
+                finish();
             }
         });
     }
 
     private void createEvent() {
-        // get input values
         String name = eventNameInput.getText().toString().trim();
         String location = eventLocationInput.getText().toString().trim();
         String priceStr = eventPriceInput.getText().toString().trim();
@@ -68,14 +64,12 @@ public class CreateEventActivity extends AppCompatActivity {
         String date = eventDateInput.getText().toString().trim();
         String totalSpotsStr = eventTotalSpotsInput.getText().toString().trim();
 
-        // check for empty fields
         if (name.isEmpty() || location.isEmpty() || priceStr.isEmpty() ||
                 description.isEmpty() || date.isEmpty() || totalSpotsStr.isEmpty()) {
             Toast.makeText(this, "Please fill out all fields", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // parse numbers safely
         double price;
         int totalSpots;
         try {
@@ -92,47 +86,42 @@ public class CreateEventActivity extends AppCompatActivity {
             return;
         }
 
-        // build event map
         Map<String, Object> event = new HashMap<>();
         event.put("name", name);
         event.put("location", location);
-        event.put("price", price); // store as number
+        event.put("price", price);
         event.put("description", description);
         event.put("date", date);
         event.put("totalSpots", totalSpots);
-        event.put("waitingList", 0); // default empty waiting list
-        event.put("ageGroup", "All Ages"); // default
-        event.put("organizerId", ""); // placeholder
+        event.put("waitingList", 0);
+        event.put("ageGroup", "All Ages");
+        event.put("organizerId", "dummy_organizer_id"); // TODO: replace with real accountID
 
-        // add to Firestore
         db.collection("events")
                 .add(event)
                 .addOnSuccessListener(docRef -> {
-                    String eventId = docRef.getId();   // Firestore document ID
-                    Bitmap qr = generateQRCode(eventId); // Generate QR code based off ID
-                    eventQRCode.setImageBitmap(qr); // Display QR
+                    String eventId = docRef.getId();
+
+                    // TODO: remove this toast once testing is done
+                    Toast.makeText(this, "Event ID: " + eventId, Toast.LENGTH_LONG).show();
+
+                    Bitmap qr = generateQRCode(eventId);
+                    eventQRCode.setImageBitmap(qr);
                     eventCreated = true;
                     createEventButton.setText("Done");
-
                     Toast.makeText(this, "Event created! QR code generated.", Toast.LENGTH_SHORT).show();
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to create event: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
     }
-    private Bitmap generateQRCode(String eventId) {
 
+    private Bitmap generateQRCode(String eventId) {
         try {
             BarcodeEncoder encoder = new BarcodeEncoder();
-            Bitmap bitmap = encoder.encodeBitmap(
-                    eventId,
-                    BarcodeFormat.QR_CODE,
-                    400,
-                    400
-            );
-            return bitmap;
+            return encoder.encodeBitmap(eventId, BarcodeFormat.QR_CODE, 400, 400);
         } catch (Exception e) {
-            Log.e("QR_GENERATION", "QR generation failed", e);
+            Log.e("QR", "QR generation failed", e);
             return null;
         }
     }

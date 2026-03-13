@@ -6,7 +6,7 @@ package com.example.lotteryapp;
  */
 public class EventModel {
 
-    private String id;          // Firestore document ID
+    private String id;
     private String name;
     private String date;
     private String ageGroup;
