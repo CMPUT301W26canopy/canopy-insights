@@ -1,11 +1,9 @@
 package com.example.lotteryapp;
 
-
 import android.graphics.Bitmap;
 import com.google.zxing.BarcodeFormat;
 import com.journeyapps.barcodescanner.BarcodeEncoder;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -17,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,14 +38,14 @@ public class CreateEventActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         deviceData = DeviceData.getInstance(this);
 
-        eventNameInput = findViewById(R.id.eventNameInput);
-        eventLocationInput = findViewById(R.id.eventLocationInput);
-        eventPriceInput = findViewById(R.id.eventPriceInput);
+        eventNameInput        = findViewById(R.id.eventNameInput);
+        eventLocationInput    = findViewById(R.id.eventLocationInput);
+        eventPriceInput       = findViewById(R.id.eventPriceInput);
         eventDescriptionInput = findViewById(R.id.eventDescriptionInput);
-        eventDateInput = findViewById(R.id.eventDateInput);
-        eventTotalSpotsInput = findViewById(R.id.eventTotalSpotsInput);
-        createEventButton = findViewById(R.id.createEventButton);
-        eventQRCode = findViewById(R.id.eventQRCode);
+        eventDateInput        = findViewById(R.id.eventDateInput);
+        eventTotalSpotsInput  = findViewById(R.id.eventTotalSpotsInput);
+        createEventButton     = findViewById(R.id.createEventButton);
+        eventQRCode           = findViewById(R.id.eventQRCode);
 
         ImageButton btnBack = findViewById(R.id.btnBack);
         btnBack.setOnClickListener(v -> finish());
@@ -61,15 +60,15 @@ public class CreateEventActivity extends AppCompatActivity {
     }
 
     private void createEvent() {
-        String name = eventNameInput.getText().toString().trim();
-        String location = eventLocationInput.getText().toString().trim();
-        String priceStr = eventPriceInput.getText().toString().trim();
+        String name        = eventNameInput.getText().toString().trim();
+        String location    = eventLocationInput.getText().toString().trim();
+        String priceStr    = eventPriceInput.getText().toString().trim();
         String description = eventDescriptionInput.getText().toString().trim();
-        String date = eventDateInput.getText().toString().trim();
-        String totalSpotsStr = eventTotalSpotsInput.getText().toString().trim();
+        String date        = eventDateInput.getText().toString().trim();
+        String spotsStr    = eventTotalSpotsInput.getText().toString().trim();
 
         if (name.isEmpty() || location.isEmpty() || priceStr.isEmpty() ||
-                description.isEmpty() || date.isEmpty() || totalSpotsStr.isEmpty()) {
+                description.isEmpty() || date.isEmpty() || spotsStr.isEmpty()) {
             Toast.makeText(this, "Please fill out all fields", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -82,15 +81,19 @@ public class CreateEventActivity extends AppCompatActivity {
             Toast.makeText(this, "Enter a valid price", Toast.LENGTH_SHORT).show();
             return;
         }
-
         try {
-            totalSpots = Integer.parseInt(totalSpotsStr);
+            totalSpots = Integer.parseInt(spotsStr);
         } catch (NumberFormatException e) {
             Toast.makeText(this, "Enter a valid number of spots", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String organizerId = deviceData.isLoggedIn() ? deviceData.getAccountID() : "anonymous";
+        // use the logged-in accountID so OrganizerActivity can find it
+        String organizerId = deviceData.getAccountID();
+        if (organizerId == null) {
+            Toast.makeText(this, "Please log in before creating an event", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         Map<String, Object> event = new HashMap<>();
         event.put("name", name);
@@ -99,14 +102,14 @@ public class CreateEventActivity extends AppCompatActivity {
         event.put("description", description);
         event.put("date", date);
         event.put("totalSpots", totalSpots);
-        event.put("waitingList", 0);
+        event.put("waitingList", new ArrayList<>());
         event.put("ageGroup", "All Ages");
         event.put("organizerId", organizerId);
 
         db.collection("events")
                 .add(event)
                 .addOnSuccessListener(docRef -> {
-                    String eventId = docRef.getId();   // Firestore document ID
+                    String eventId = docRef.getId();
                     Bitmap qr = QRCodeHelper.generateQRCode(eventId);
                     if (qr != null) {
                         eventQRCode.setImageBitmap(qr);
@@ -114,14 +117,11 @@ public class CreateEventActivity extends AppCompatActivity {
                     } else {
                         Toast.makeText(this, "QR code generation failed", Toast.LENGTH_SHORT).show();
                     }
-
-                // Change button to Done regardless
                     eventCreated = true;
                     createEventButton.setText("Done");
-                    Toast.makeText(this, "Event created! QR code generated.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Event created!", Toast.LENGTH_SHORT).show();
                 })
                 .addOnFailureListener(e ->
-                        Toast.makeText(this, "Failed to create event: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
+                        Toast.makeText(this, "Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 }

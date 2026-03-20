@@ -7,7 +7,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,11 +36,6 @@ public class OrganizerActivity extends AppCompatActivity {
         deviceData = DeviceData.getInstance(this);
         if (deviceData.isLoggedIn()) {
             organizerId = deviceData.getAccountID();
-        } else {
-           // Toast.makeText(this, "Please sign in to view your events", Toast.LENGTH_SHORT).show();
-           // startActivity(new Intent(this, LoginActivity.class));
-          //  finish();
-           // return;
         }
 
         btnCreateEvent = findViewById(R.id.btnCreateEvent);
@@ -49,13 +43,11 @@ public class OrganizerActivity extends AppCompatActivity {
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
-        // Create Event tab
         btnCreateEvent.setOnClickListener(v -> {
-            startActivity(new Intent(this, CreateEventActivity.class));
             setActiveTab(btnCreateEvent, btnMyEvents);
+            startActivity(new Intent(this, CreateEventActivity.class));
         });
 
-        // My Events tab
         btnMyEvents.setOnClickListener(v -> {
             setActiveTab(btnMyEvents, btnCreateEvent);
             loadMyEvents();
@@ -97,6 +89,13 @@ public class OrganizerActivity extends AppCompatActivity {
         loadMyEvents();
     }
 
+    // reload events every time we come back from CreateEventActivity
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadMyEvents();
+    }
+
     private void setActiveTab(Button active, Button inactive) {
         active.setBackgroundTintList(ColorStateList.valueOf(0xFF6B5FA6));
         active.setTextColor(0xFFFFFFFF);
@@ -105,50 +104,50 @@ public class OrganizerActivity extends AppCompatActivity {
     }
 
     private void loadMyEvents() {
-        if (organizerId == null) {
-            FirestoreHelper.getDb().collection("events")
-                    .whereEqualTo("organizerId", "dummy_id")
-                    .get()
-                    .addOnSuccessListener(snap -> {
-                        myEventsList.clear();
-                        for (QueryDocumentSnapshot doc : snap) {
-                            EventModel e = doc.toObject(EventModel.class);
-                            e.setId(doc.getId());
-                            myEventsList.add(e);
-                        }
-                        myEventsAdapter.notifyDataSetChanged();
-                        if (myEventsList.isEmpty())
-                            Toast.makeText(this, "No events yet", Toast.LENGTH_SHORT).show();
-                    })
-                    .addOnFailureListener(e ->
-                            Toast.makeText(this, "Failed to load", Toast.LENGTH_SHORT).show());
-
-         return ;
-        }
+        String queryId = (organizerId != null) ? organizerId : "dummy_id";
 
         FirestoreHelper.getDb().collection("events")
-                .whereEqualTo("organizerId", organizerId)
+                .whereEqualTo("organizerId", queryId)
                 .get()
                 .addOnSuccessListener(snap -> {
                     myEventsList.clear();
                     for (QueryDocumentSnapshot doc : snap) {
-                        EventModel e = doc.toObject(EventModel.class);
+                        EventModel e = null;
+                        try {
+                            e = doc.toObject(EventModel.class);
+                        } catch (Exception ex) {
+                            e = new EventModel();
+                            e.setWaitingList(new ArrayList<>());
+                            String name = doc.getString("name");
+                            String date = doc.getString("date");
+                            String loc  = doc.getString("location");
+                            String age  = doc.getString("ageGroup");
+                            Long price  = doc.getLong("price");
+                            Long spots  = doc.getLong("totalSpots");
+                            if (name  != null) e.setName(name);
+                            if (date  != null) e.setDate(date);
+                            if (loc   != null) e.setLocation(loc);
+                            if (age   != null) e.setAgeGroup(age);
+                            if (price != null) e.setPrice(price.doubleValue());
+                            if (spots != null) e.setTotalSpots(spots.intValue());
+                        }
                         e.setId(doc.getId());
                         myEventsList.add(e);
                     }
                     myEventsAdapter.notifyDataSetChanged();
-                    if (myEventsList.isEmpty())
+                    if (myEventsList.isEmpty()) {
                         Toast.makeText(this, "No events yet", Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .addOnFailureListener(e ->
-                        Toast.makeText(this, "Failed to load", Toast.LENGTH_SHORT).show());
+                        Toast.makeText(this, "Failed to load: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show());
     }
 
     private void setupBottomNav() {
-        findViewById(R.id.navHome).setOnClickListener(v -> {
-            startActivity(new Intent(this, MainActivity.class));
-        });
-        findViewById(R.id.navCreate).setOnClickListener(v -> {}); // already here
+        findViewById(R.id.navHome).setOnClickListener(v ->
+                startActivity(new Intent(this, MainActivity.class)));
+        findViewById(R.id.navCreate).setOnClickListener(v -> {});
         findViewById(R.id.navHistory).setOnClickListener(v ->
                 Toast.makeText(this, "History — coming soon", Toast.LENGTH_SHORT).show());
         findViewById(R.id.navProfile).setOnClickListener(v -> {
