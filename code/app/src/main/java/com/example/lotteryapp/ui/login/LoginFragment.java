@@ -21,6 +21,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.lotteryapp.DeviceData;
 import com.example.lotteryapp.databinding.FragmentLoginBinding;
 
 import com.example.lotteryapp.R;
@@ -29,6 +30,7 @@ public class LoginFragment extends Fragment {
 
     private LoginViewModel loginViewModel;
     private FragmentLoginBinding binding;
+    private DeviceData deviceData;
 
     @Nullable
     @Override
@@ -46,6 +48,8 @@ public class LoginFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         loginViewModel = new ViewModelProvider(this, new LoginViewModelFactory())
                 .get(LoginViewModel.class);
+
+        deviceData = DeviceData.getInstance(getContext());
 
         final EditText usernameEditText = binding.usernameProvided;
         final EditText passwordEditText = binding.password;
@@ -153,7 +157,9 @@ public class LoginFragment extends Fragment {
 
                         if (userProfile != null && inputPassword.equals(userProfile.getPassword())) {
                             // Password matches
-                           // updateUiWithUser(new LoggedInUserView(userProfile.getUsername()));
+                            
+                            // Create session
+                            deviceData.createLoginSession(userProfile.getAccountID(), userProfile.getUsername());
 
                             // Navigate to profile activity
                             android.content.Intent intent = new android.content.Intent(getActivity(), com.example.lotteryapp.ProfileActivity.class);

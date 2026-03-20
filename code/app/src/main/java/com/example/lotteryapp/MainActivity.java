@@ -27,11 +27,14 @@ public class MainActivity extends AppCompatActivity {
     private EventAdapter adapter;
     private final List<EventModel> masterList  = new ArrayList<>();
     private final List<EventModel> displayList = new ArrayList<>();
+    private DeviceData deviceData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        deviceData = DeviceData.getInstance(this);
 
         // recycler view setup
         RecyclerView recyclerView = findViewById(R.id.recyclerView);
@@ -158,10 +161,14 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "History — coming soon", Toast.LENGTH_SHORT).show());
 
         findViewById(R.id.navProfile).setOnClickListener(v ->{
-                //ProfileActivity
-            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-            startActivity(intent);
-
+            if (deviceData.isLoggedIn()) {
+                Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
+                intent.putExtra("accountID", deviceData.getAccountID());
+                startActivity(intent);
+            } else {
+                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                startActivity(intent);
+            }
         });
     }
 }

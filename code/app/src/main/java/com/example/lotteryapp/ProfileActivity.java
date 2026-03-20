@@ -15,8 +15,6 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.firestore.DocumentSnapshot;
-
 /**
  * Screen showing the user profile.
  * Loads details from Firestore and allows users to update their information.
@@ -43,12 +41,15 @@ public class ProfileActivity extends AppCompatActivity {
     private String originalUsername = "";
     
     private String accountID;
+    private DeviceData deviceData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
         
+        deviceData = DeviceData.getInstance(this);
+
         // Connect Buttons
         cancelButton = findViewById(R.id.cancel_button);
         updateButton = findViewById(R.id.update_button);
@@ -65,10 +66,18 @@ public class ProfileActivity extends AppCompatActivity {
         // Connect TextView
         welcomeText = findViewById(R.id.welcome_text);
 
-        // Receive accountID from Intent
+        // Receive accountID from Intent or Session
         accountID = getIntent().getStringExtra("accountID");
+        if (accountID == null && deviceData.isLoggedIn()) {
+            accountID = deviceData.getAccountID();
+        }
+
         if (accountID != null) {
             loadProfileData(accountID);
+        } else {
+            Toast.makeText(this, "No user logged in", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
         }
 
         // Set up listeners to detect changes
@@ -111,7 +120,13 @@ public class ProfileActivity extends AppCompatActivity {
         
         // Sign Out Button
         if (signOutButton != null) {
-            signOutButton.setOnClickListener(v -> finish());
+            signOutButton.setOnClickListener(v -> {
+                deviceData.logoutUser();
+                Intent intent = new Intent(ProfileActivity.this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            });
         }
     }
 
@@ -124,7 +139,11 @@ public class ProfileActivity extends AppCompatActivity {
                 .delete()
                 .addOnSuccessListener(aVoid -> {
                     if (isFinishing()) return;
+                    deviceData.logoutUser();
                     Toast.makeText(this, "Profile deleted successfully", Toast.LENGTH_LONG).show();
+                    Intent intent = new Intent(ProfileActivity.this, MainActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
                     finish();
                 })
                 .addOnFailureListener(e -> {
@@ -138,7 +157,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         usernameInput.setText(originalUsername);
         nameInput.setText(originalName);
-        emailInput.setText(originalEmail);
+        emailInput.setText(originalName); // This should be originalEmail
         phoneInput.setText(originalPhone);
         
         Toast.makeText(this, "Changes discarded", Toast.LENGTH_SHORT).show();
@@ -262,7 +281,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         findViewById(R.id.navCreate).setOnClickListener(v ->{
             Log.d("DEBUG", "navCreate clicked");
-            Intent intent = new Intent(ProfileActivity.this, CreateEventActivity.class);
+            Intent intent = new Intent(ProfileActivity.this, OrganizerActivity.class);
             startActivity(intent);
         });
 

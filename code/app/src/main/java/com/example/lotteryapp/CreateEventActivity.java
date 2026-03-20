@@ -1,10 +1,7 @@
 package com.example.lotteryapp;
 
 import android.graphics.Bitmap;
-import com.google.zxing.BarcodeFormat;
-import com.journeyapps.barcodescanner.BarcodeEncoder;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -26,6 +23,7 @@ public class CreateEventActivity extends AppCompatActivity {
     Button createEventButton;
     ImageView eventQRCode;
     private boolean eventCreated = false;
+    private DeviceData deviceData;
 
     FirebaseFirestore db;
 
@@ -35,6 +33,7 @@ public class CreateEventActivity extends AppCompatActivity {
         setContentView(R.layout.create_event);
 
         db = FirebaseFirestore.getInstance();
+        deviceData = DeviceData.getInstance(this);
 
         eventNameInput = findViewById(R.id.eventNameInput);
         eventLocationInput = findViewById(R.id.eventLocationInput);
@@ -87,6 +86,8 @@ public class CreateEventActivity extends AppCompatActivity {
             return;
         }
 
+        String organizerId = deviceData.isLoggedIn() ? deviceData.getAccountID() : "anonymous";
+
         Map<String, Object> event = new HashMap<>();
         event.put("name", name);
         event.put("location", location);
@@ -96,7 +97,7 @@ public class CreateEventActivity extends AppCompatActivity {
         event.put("totalSpots", totalSpots);
         event.put("waitingList", 0);
         event.put("ageGroup", "All Ages");
-        event.put("organizerId", "dummy_organizer_id"); // TODO: replace with real accountID
+        event.put("organizerId", organizerId);
 
         db.collection("events")
                 .add(event)
