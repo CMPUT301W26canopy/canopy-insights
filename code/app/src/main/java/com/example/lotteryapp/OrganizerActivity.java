@@ -22,8 +22,8 @@ import java.util.List;
 
 public class OrganizerActivity extends AppCompatActivity {
 
-    // TODO: We need to replace with real accountID
-    private static final String ORGANIZER_ID = "dummy_id";
+    private String organizerId;
+    private DeviceData deviceData;
 
     private final List<EventModel> myEventsList = new ArrayList<>();
     private RecyclerView.Adapter myEventsAdapter;
@@ -33,6 +33,16 @@ public class OrganizerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_organizer);
+
+        deviceData = DeviceData.getInstance(this);
+        if (deviceData.isLoggedIn()) {
+            organizerId = deviceData.getAccountID();
+        } else {
+           // Toast.makeText(this, "Please sign in to view your events", Toast.LENGTH_SHORT).show();
+           // startActivity(new Intent(this, LoginActivity.class));
+          //  finish();
+           // return;
+        }
 
         btnCreateEvent = findViewById(R.id.btnCreateEvent);
         btnMyEvents    = findViewById(R.id.btnMyEvents);
@@ -95,8 +105,29 @@ public class OrganizerActivity extends AppCompatActivity {
     }
 
     private void loadMyEvents() {
+        if (organizerId == null) {
+            FirestoreHelper.getDb().collection("events")
+                    .whereEqualTo("organizerId", "dummy_id")
+                    .get()
+                    .addOnSuccessListener(snap -> {
+                        myEventsList.clear();
+                        for (QueryDocumentSnapshot doc : snap) {
+                            EventModel e = doc.toObject(EventModel.class);
+                            e.setId(doc.getId());
+                            myEventsList.add(e);
+                        }
+                        myEventsAdapter.notifyDataSetChanged();
+                        if (myEventsList.isEmpty())
+                            Toast.makeText(this, "No events yet", Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(e ->
+                            Toast.makeText(this, "Failed to load", Toast.LENGTH_SHORT).show());
+
+         return ;
+        }
+
         FirestoreHelper.getDb().collection("events")
-                .whereEqualTo("organizerId", ORGANIZER_ID)
+                .whereEqualTo("organizerId", organizerId)
                 .get()
                 .addOnSuccessListener(snap -> {
                     myEventsList.clear();
@@ -120,7 +151,14 @@ public class OrganizerActivity extends AppCompatActivity {
         findViewById(R.id.navCreate).setOnClickListener(v -> {}); // already here
         findViewById(R.id.navHistory).setOnClickListener(v ->
                 Toast.makeText(this, "History — coming soon", Toast.LENGTH_SHORT).show());
-        findViewById(R.id.navProfile).setOnClickListener(v ->
-                startActivity(new Intent(this, LoginActivity.class)));
+        findViewById(R.id.navProfile).setOnClickListener(v -> {
+            if (deviceData.isLoggedIn()) {
+                Intent intent = new Intent(this, ProfileActivity.class);
+                intent.putExtra("accountID", deviceData.getAccountID());
+                startActivity(intent);
+            } else {
+                startActivity(new Intent(this, LoginActivity.class));
+            }
+        });
     }
 }

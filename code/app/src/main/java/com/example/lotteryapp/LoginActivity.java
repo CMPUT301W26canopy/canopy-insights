@@ -84,7 +84,7 @@ public class LoginActivity extends AppCompatActivity {
 
         findViewById(R.id.navCreate).setOnClickListener(v ->{
             Log.d("DEBUG", "navCreate clicked");
-            Intent intent = new Intent(LoginActivity.this, CreateEventActivity.class);
+            Intent intent = new Intent(LoginActivity.this, OrganizerActivity.class);
             startActivity(intent);
         });
 
