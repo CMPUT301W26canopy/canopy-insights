@@ -1,7 +1,11 @@
 package com.example.lotteryapp;
 
+
 import android.graphics.Bitmap;
+import com.google.zxing.BarcodeFormat;
+import com.journeyapps.barcodescanner.BarcodeEncoder;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
