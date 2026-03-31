@@ -35,7 +35,7 @@ public class ApplicantsActivity extends AppCompatActivity {
 
     private Button btnRunLottery, btnReplacementDraw, btnCancelNoShows;
     private EditText etPrice, etDrawDate, etTotalSpots, etDescription;
-    private TextView tvParticipantsLabel, tvApplicantCount;
+    private TextView tvParticipantsLabel, tvApplicantCount, tvVisibility;
     private View participantsContainer;
     private boolean participantsExpanded = false;
 
@@ -50,10 +50,15 @@ public class ApplicantsActivity extends AppCompatActivity {
         totalSpots = getIntent().getIntExtra("TOTAL_SPOTS", 0);
         double price = getIntent().getDoubleExtra("PRICE", 0);
         String description = getIntent().getStringExtra("DESCRIPTION");
+        String visibility = getIntent().getStringExtra("VISIBILITY");
 
         // bind views
         ((TextView) findViewById(R.id.tvEventTitle)).setText(eventName);
         ((TextView) findViewById(R.id.tvEventDate)).setText(eventDate);
+        tvVisibility = findViewById(R.id.tvVisibility);
+        if (visibility != null) {
+            tvVisibility.setText(visibility.toUpperCase());
+        }
 
         etPrice           = findViewById(R.id.etPrice);
         etDrawDate        = findViewById(R.id.etDrawDate);

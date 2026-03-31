@@ -15,6 +15,8 @@ public class EventModel {
     private List<String> waitingList;
     private String organizerId;
 
+    private String visibility;
+
     public EventModel() {}
 
     public EventModel(String name, String date, String ageGroup, String location,
@@ -58,6 +60,14 @@ public class EventModel {
 
     public int getWaitingListCount() {
         return waitingList != null ? waitingList.size() : 0;
+    }
+
+    public String getVisibility() {
+        return visibility;
+    }
+
+    public void setVisibility(String visibility) {
+        this.visibility = visibility;
     }
 
     public void addToWaitingList(String userId) {
