@@ -34,6 +34,7 @@ public class EventActivity extends AppCompatActivity {
     private Button btnJoin, btnLeave;
     private String eventId, userId;
     private boolean isOnWaitingList = false;
+    private boolean isInvitedHost = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,18 +99,29 @@ public class EventActivity extends AppCompatActivity {
                         if (spots != null) event.setTotalSpots(spots.intValue());
                     }
                     if (event != null) {
+                        // Check if current user is an invited host
+                        List<String> invitedHosts = (List<String>) documentSnapshot.get("invitedHosts");
+                        isInvitedHost = invitedHosts != null && invitedHosts.contains(userId);
+                        
                         eventDetailsList.clear();
+                        if (isInvitedHost) {
+                            eventDetailsList.add("★ YOU ARE A CO-HOST ★");
+                        }
                         eventDetailsList.add("Total Spots: " + event.getTotalSpots());
                         eventDetailsList.add("Current Waiting List: " + event.getWaitingListCount());
                         eventDetailsList.add(String.format(Locale.getDefault(), "Price: $%d", (int) event.getPrice()));
                         eventDetailsList.add("Age Group: " + event.getAgeGroup());
                         eventDetailsList.add("Location: " + event.getLocation());
                         eventDetailsList.add("Date: " + event.getDate());
+                        
                         if (costHeading != null)
                             costHeading.setText(String.format(Locale.getDefault(), "$%d", (int) event.getPrice()));
                         if (eventHeading != null)
                             eventHeading.setText(event.getName());
+                        
                         adapter.notifyDataSetChanged();
+                        updateJoinLeaveButtons();
+
                         if (qrCodeView != null) {
                             Bitmap qr = QRCodeHelper.generateQRCode(eventId);
                             if (qr != null) {
@@ -140,6 +152,11 @@ public class EventActivity extends AppCompatActivity {
             Toast.makeText(this, "Please log in to join", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (isInvitedHost) {
+            Toast.makeText(this, "Co-hosts cannot join the waiting list.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        
         Map<String, Object> application = new HashMap<>();
         application.put("eventId", eventId);
         application.put("userId", userId);
@@ -161,11 +178,12 @@ public class EventActivity extends AppCompatActivity {
         if (userId == null) return;
         FirestoreHelper.getDb().collection("applications")
                 .whereEqualTo("eventId", eventId)
-                .whereEqualTo("userId", userId)
                 .get()
                 .addOnSuccessListener(snap -> {
                     for (DocumentSnapshot doc : snap.getDocuments()) {
-                        doc.getReference().delete();
+                        if (userId.equals(doc.getString("userId"))) {
+                            doc.getReference().delete();
+                        }
                     }
                     isOnWaitingList = false;
                     updateJoinLeaveButtons();
@@ -176,8 +194,13 @@ public class EventActivity extends AppCompatActivity {
     }
 
     private void updateJoinLeaveButtons() {
-        if (btnJoin != null) btnJoin.setVisibility(isOnWaitingList ? View.GONE : View.VISIBLE);
-        if (btnLeave != null) btnLeave.setVisibility(isOnWaitingList ? View.VISIBLE : View.GONE);
+        if (isInvitedHost) {
+            if (btnJoin != null) btnJoin.setVisibility(View.GONE);
+            if (btnLeave != null) btnLeave.setVisibility(View.GONE);
+        } else {
+            if (btnJoin != null) btnJoin.setVisibility(isOnWaitingList ? View.GONE : View.VISIBLE);
+            if (btnLeave != null) btnLeave.setVisibility(isOnWaitingList ? View.VISIBLE : View.GONE);
+        }
     }
 
     private void setupBottomNav() {

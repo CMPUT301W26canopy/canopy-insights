@@ -1,5 +1,6 @@
 package com.example.lotteryapp;
 
+import java.util.Objects;
 
 /**
  * An object representing a account to be stored in the firestore database.
@@ -63,5 +64,18 @@ public class ProfileModel {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ProfileModel that = (ProfileModel) o;
+        return Objects.equals(accountID, that.accountID);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(accountID);
     }
 }
