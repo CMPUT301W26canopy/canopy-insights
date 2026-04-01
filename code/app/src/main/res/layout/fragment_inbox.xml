@@ -1,20 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal">
+    android:orientation="vertical"
+    android:padding="16dp">
 
     <TextView
         android:id="@+id/item_number"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/text_margin"
+        android:textStyle="bold"
+        android:textColor="@color/black"
         android:textAppearance="?attr/textAppearanceListItem" />
 
     <TextView
         android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="#666666"
+        android:textAppearance="?attr/textAppearanceListItem" />
+
+    <Button
+        android:id="@+id/btn_view_event"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/text_margin"
-        android:textAppearance="?attr/textAppearanceListItem" />
+        android:layout_marginTop="8dp"
+        android:text="View Event"
+        android:visibility="gone"
+        style="?android:attr/borderlessButtonStyle"
+        android:textColor="#6B5FA6" />
+
 </LinearLayout>

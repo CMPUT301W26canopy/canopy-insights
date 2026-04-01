@@ -1,9 +1,13 @@
 package com.example.lotteryapp;
 
 import androidx.recyclerview.widget.RecyclerView;
+
+import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import java.util.List;
@@ -28,9 +32,22 @@ public class MyInboxRecyclerViewAdapter extends RecyclerView.Adapter<MyInboxRecy
 
     @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
-        holder.mItem = mValues.get(position);
-        holder.mIdView.setText(mValues.get(position).getSenderAccountID());
-        holder.mContentView.setText(mValues.get(position).getMessage());
+        NotificationModel item = mValues.get(position);
+        holder.mItem = item;
+        holder.mIdView.setText(item.getSenderAccountID());
+        holder.mContentView.setText(item.getMessage());
+
+        if (item.getEventId() != null && !item.getEventId().isEmpty()) {
+            holder.mViewEventBtn.setVisibility(View.VISIBLE);
+            holder.mViewEventBtn.setOnClickListener(v -> {
+                Context context = v.getContext();
+                Intent intent = new Intent(context, EventActivity.class);
+                intent.putExtra("EVENT_ID", item.getEventId());
+                context.startActivity(intent);
+            });
+        } else {
+            holder.mViewEventBtn.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -41,12 +58,14 @@ public class MyInboxRecyclerViewAdapter extends RecyclerView.Adapter<MyInboxRecy
     public class ViewHolder extends RecyclerView.ViewHolder {
         public final TextView mIdView;
         public final TextView mContentView;
+        public final Button mViewEventBtn;
         public NotificationModel mItem;
 
         public ViewHolder(View view) {
             super(view);
-            mIdView = (TextView) view.findViewById(R.id.item_number);
-            mContentView = (TextView) view.findViewById(R.id.content);
+            mIdView = view.findViewById(R.id.item_number);
+            mContentView = view.findViewById(R.id.content);
+            mViewEventBtn = view.findViewById(R.id.btn_view_event);
         }
 
         @Override

@@ -3,6 +3,7 @@ package com.example.lotteryapp;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,14 +11,20 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class OrganizerActivity extends AppCompatActivity {
 
@@ -104,44 +111,60 @@ public class OrganizerActivity extends AppCompatActivity {
     }
 
     private void loadMyEvents() {
-        String queryId = (organizerId != null) ? organizerId : "dummy_id";
+        if (organizerId == null) {
+            Toast.makeText(this, "Please sign in to view your events", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        FirestoreHelper.getDb().collection("events")
-                .whereEqualTo("organizerId", queryId)
-                .get()
-                .addOnSuccessListener(snap -> {
-                    myEventsList.clear();
-                    for (QueryDocumentSnapshot doc : snap) {
-                        EventModel e = null;
-                        try {
-                            e = doc.toObject(EventModel.class);
-                        } catch (Exception ex) {
-                            e = new EventModel();
-                            e.setWaitingList(new ArrayList<>());
-                            String name = doc.getString("name");
-                            String date = doc.getString("date");
-                            String loc  = doc.getString("location");
-                            String age  = doc.getString("ageGroup");
-                            Long price  = doc.getLong("price");
-                            Long spots  = doc.getLong("totalSpots");
-                            if (name  != null) e.setName(name);
-                            if (date  != null) e.setDate(date);
-                            if (loc   != null) e.setLocation(loc);
-                            if (age   != null) e.setAgeGroup(age);
-                            if (price != null) e.setPrice(price.doubleValue());
-                            if (spots != null) e.setTotalSpots(spots.intValue());
-                        }
-                        e.setId(doc.getId());
-                        myEventsList.add(e);
+        // Query 1: Events where the user is the primary organizer
+        Task<QuerySnapshot> primaryQuery = FirestoreHelper.getDb().collection("events")
+                .whereEqualTo("organizerId", organizerId)
+                .get();
+
+        // Query 2: Events where the user is in the invitedHosts list (co-hosts)
+        Task<QuerySnapshot> cohostQuery = FirestoreHelper.getDb().collection("events")
+                .whereArrayContains("invitedHosts", organizerId)
+                .get();
+
+        Tasks.whenAllSuccess(primaryQuery, cohostQuery).addOnSuccessListener(results -> {
+            Set<EventModel> mergedEvents = new HashSet<>();
+            for (Object result : results) {
+                QuerySnapshot snapshot = (QuerySnapshot) result;
+                for (QueryDocumentSnapshot doc : snapshot) {
+                    EventModel e = null;
+                    try {
+                        e = doc.toObject(EventModel.class);
+                    } catch (Exception ex) {
+                        e = new EventModel();
+                        e.setWaitingList(new ArrayList<>());
+                        String name = doc.getString("name");
+                        String date = doc.getString("date");
+                        String loc  = doc.getString("location");
+                        String age  = doc.getString("ageGroup");
+                        Long price  = doc.getLong("price");
+                        Long spots  = doc.getLong("totalSpots");
+                        if (name  != null) e.setName(name);
+                        if (date  != null) e.setDate(date);
+                        if (loc   != null) e.setLocation(loc);
+                        if (age   != null) e.setAgeGroup(age);
+                        if (price != null) e.setPrice(price.doubleValue());
+                        if (spots != null) e.setTotalSpots(spots.intValue());
                     }
-                    myEventsAdapter.notifyDataSetChanged();
-                    if (myEventsList.isEmpty()) {
-                        Toast.makeText(this, "No events yet", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Failed to load: " + e.getMessage(),
-                                Toast.LENGTH_SHORT).show());
+                    e.setId(doc.getId());
+                    mergedEvents.add(e);
+                }
+            }
+            myEventsList.clear();
+            myEventsList.addAll(mergedEvents);
+            myEventsAdapter.notifyDataSetChanged();
+            
+            if (myEventsList.isEmpty()) {
+                Toast.makeText(this, "No events found", Toast.LENGTH_SHORT).show();
+            }
+        }).addOnFailureListener(e -> {
+            Log.e("OrganizerActivity", "Failed to load events", e);
+            Toast.makeText(this, "Failed to load events: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void setupBottomNav() {

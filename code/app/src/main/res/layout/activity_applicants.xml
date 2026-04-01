@@ -425,6 +425,15 @@
                     android:textColor="@android:color/white"
                     android:visibility="gone"/>
 
+                <Button
+                    android:id="@+id/btnInvite"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="INVITE"
+                    android:backgroundTint="#6B5FA6"
+                    android:textColor="@android:color/white"/>
+
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

@@ -13,6 +13,10 @@ public class EventModel {
     private double price;
     private int totalSpots;
     private List<String> waitingList;
+
+    private List<String> coHosts;
+
+    private List<String> invitedHosts;
     private String organizerId;
 
     private String visibility;
@@ -57,6 +61,22 @@ public class EventModel {
 
     public List<String> getWaitingList()         { return waitingList; }
     public void setWaitingList(List<String> w)   { this.waitingList = w; }
+
+    public List<String> getInvitedHosts() {
+        return invitedHosts;
+    }
+
+    public void setInvitedHosts(List<String> invitedHosts) {
+        this.invitedHosts = invitedHosts;
+    }
+
+    public List<String> getCoHosts() {
+        return coHosts;
+    }
+
+    public void setCoHosts(List<String> coHosts) {
+        this.coHosts = coHosts;
+    }
 
     public int getWaitingListCount() {
         return waitingList != null ? waitingList.size() : 0;

@@ -33,7 +33,7 @@ public class ApplicantsActivity extends AppCompatActivity {
     private final List<Map<String, String>> displayList    = new ArrayList<>();
     private RecyclerView.Adapter adapter;
 
-    private Button btnRunLottery, btnReplacementDraw, btnCancelNoShows;
+    private Button btnRunLottery, btnReplacementDraw, btnCancelNoShows, btnInvite;
     private EditText etPrice, etDrawDate, etTotalSpots, etDescription;
     private TextView tvParticipantsLabel, tvApplicantCount, tvVisibility;
     private View participantsContainer;
@@ -70,6 +70,7 @@ public class ApplicantsActivity extends AppCompatActivity {
         btnRunLottery     = findViewById(R.id.btnRunLottery);
         btnReplacementDraw = findViewById(R.id.btnReplacementDraw);
         btnCancelNoShows  = findViewById(R.id.btnCancelNoShows);
+        btnInvite         = findViewById(R.id.btnInvite);
 
         // populate editable fields
         etPrice.setText(String.valueOf((int) price));
@@ -115,6 +116,12 @@ public class ApplicantsActivity extends AppCompatActivity {
         btnReplacementDraw.setOnClickListener(v -> runReplacementDraw());
         btnCancelNoShows.setOnClickListener(v -> cancelNoShows());
         findViewById(R.id.btnDeleteEvent).setOnClickListener(v -> deleteEvent());
+
+        // Invite button logic
+        btnInvite.setOnClickListener(v -> {
+            InviteFragment fragment = InviteFragment.newInstance(eventId);
+            fragment.show(getSupportFragmentManager(), "InviteFragment");
+        });
 
         // recycler
         RecyclerView recyclerView = findViewById(R.id.applicantsRecyclerView);

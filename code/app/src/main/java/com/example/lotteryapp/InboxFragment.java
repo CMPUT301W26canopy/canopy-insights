@@ -92,6 +92,8 @@ public class InboxFragment extends Fragment {
                                 notif.setReceiverAccountID((String) map.get("receiverAccountID"));
                                 notif.setMessage((String) map.get("message"));
                                 notif.setTimestamp((String) map.get("timestamp"));
+                                // Correctly extract the eventID to trigger the "View Event" button
+                                notif.setEventId((String) map.get("eventID"));
                                 notificationList.add(notif);
                             }
                             adapter.notifyDataSetChanged();

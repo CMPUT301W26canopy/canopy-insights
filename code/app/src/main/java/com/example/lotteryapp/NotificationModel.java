@@ -13,6 +13,8 @@ public class NotificationModel  {
     private String message;
     private String timestamp;
 
+    private String eventId;
+
     /**
      * Empty constructor for Firestore
      */
@@ -72,6 +74,14 @@ public class NotificationModel  {
      */
     public String getTimestamp() {
         return timestamp;
+    }
+
+    public String getEventId() {
+        return eventId;
+    }
+
+    public void setEventId(String eventId) {
+        this.eventId = eventId;
     }
 
     /**
