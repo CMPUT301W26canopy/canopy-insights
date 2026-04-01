@@ -1,8 +1,6 @@
 package com.example.lotteryapp;
 
 import android.graphics.Bitmap;
-import com.google.zxing.BarcodeFormat;
-import com.journeyapps.barcodescanner.BarcodeEncoder;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -23,9 +21,10 @@ public class CreateEventActivity extends AppCompatActivity {
 
     EditText eventNameInput, eventLocationInput, eventPriceInput, eventDescriptionInput,
             eventDateInput, eventTotalSpotsInput;
-    Button createEventButton;
+    Button createEventButton, btnPrivate;
     ImageView eventQRCode;
     private boolean eventCreated = false;
+
     private DeviceData deviceData;
 
     FirebaseFirestore db;
@@ -45,10 +44,19 @@ public class CreateEventActivity extends AppCompatActivity {
         eventDateInput        = findViewById(R.id.eventDateInput);
         eventTotalSpotsInput  = findViewById(R.id.eventTotalSpotsInput);
         createEventButton     = findViewById(R.id.createEventButton);
+        btnPrivate            = findViewById(R.id.btnPrivate);
         eventQRCode           = findViewById(R.id.eventQRCode);
 
         ImageButton btnBack = findViewById(R.id.btnBack);
         btnBack.setOnClickListener(v -> finish());
+
+        btnPrivate.setOnClickListener(v -> {
+            if (btnPrivate.getText().toString().equalsIgnoreCase("Public")) {
+                btnPrivate.setText("Private");
+            } else {
+                btnPrivate.setText("Public");
+            }
+        });
 
         createEventButton.setOnClickListener(v -> {
             if (!eventCreated) {
@@ -105,6 +113,7 @@ public class CreateEventActivity extends AppCompatActivity {
         event.put("waitingList", new ArrayList<>());
         event.put("ageGroup", "All Ages");
         event.put("organizerId", organizerId);
+        event.put("visibility", btnPrivate.getText().toString());
 
         db.collection("events")
                 .add(event)
