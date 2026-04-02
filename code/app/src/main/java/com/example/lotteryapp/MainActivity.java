@@ -67,23 +67,24 @@ public class MainActivity extends AppCompatActivity {
                             event = doc.toObject(EventModel.class);
                         } catch (Exception e) {
                             event = new EventModel();
+                            event.setName(doc.getString("name"));
                             event.setWaitingList(new ArrayList<>());
-                            String name = doc.getString("name");
                             String date = doc.getString("date");
                             String age  = doc.getString("ageGroup");
                             String loc  = doc.getString("location");
                             Long price  = doc.getLong("price");
                             Long spots  = doc.getLong("totalSpots");
-                            if (name  != null) event.setName(name);
                             if (date  != null) event.setDate(date);
                             if (age   != null) event.setAgeGroup(age);
                             if (loc   != null) event.setLocation(loc);
                             if (price != null) event.setPrice(price.doubleValue());
                             if (spots != null) event.setTotalSpots(spots.intValue());
                         }
-                        event.setId(doc.getId());
-                        masterList.add(event);
-                        displayList.add(event);
+                        if (event != null) {
+                            event.setId(doc.getId());
+                            masterList.add(event);
+                            displayList.add(event);
+                        }
                     }
                     adapter.updateList(displayList);
                 })
@@ -109,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
                     List<EventModel> result = new ArrayList<>();
                     for (EventModel e : masterList) {
                         if (e.getName().toLowerCase().contains(query) ||
-                                e.getLocation().toLowerCase().contains(query)) {
+                                (e.getLocation() != null && e.getLocation().toLowerCase().contains(query))) {
                             result.add(e);
                         }
                     }
@@ -133,9 +134,9 @@ public class MainActivity extends AppCompatActivity {
                     for (EventModel e : masterList) {
                         boolean priceOk    = e.getPrice() >= minPrice && e.getPrice() <= maxPrice;
                         boolean ageOk      = ageGroup.equals("All Age Groups") ||
-                                e.getAgeGroup().contains(ageGroup);
+                                (e.getAgeGroup() != null && e.getAgeGroup().contains(ageGroup));
                         boolean locationOk = country.isEmpty() ||
-                                e.getLocation().toLowerCase().contains(country.toLowerCase());
+                                (e.getLocation() != null && e.getLocation().toLowerCase().contains(country.toLowerCase()));
                         if (priceOk && ageOk && locationOk) result.add(e);
                     }
                     displayList.clear();
