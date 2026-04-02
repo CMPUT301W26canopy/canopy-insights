@@ -20,6 +20,8 @@ public class EventModel {
     private String organizerId;
 
     private String visibility;
+    private String description;
+    private String posterImage; // Base64 or URL
 
     public EventModel() {}
 
@@ -88,6 +90,22 @@ public class EventModel {
 
     public void setVisibility(String visibility) {
         this.visibility = visibility;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getPosterImage() {
+        return posterImage;
+    }
+
+    public void setPosterImage(String posterImage) {
+        this.posterImage = posterImage;
     }
 
     public void addToWaitingList(String userId) {
