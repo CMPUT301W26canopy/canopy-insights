@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.tabs.TabLayout;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
@@ -37,7 +38,6 @@ public class AdminActivity extends AppCompatActivity {
         deviceData = DeviceData.getInstance(this);
         String username = deviceData.getUsername();
         
-        // Security check
         if (username == null || !(username.equals("Heeya") || username.equals("fasih"))) {
             Toast.makeText(this, "Admin Access Denied", Toast.LENGTH_LONG).show();
             finish();
@@ -57,12 +57,12 @@ public class AdminActivity extends AppCompatActivity {
 
         TabLayout tabLayout = findViewById(R.id.adminTabLayout);
         
-        // Explicitly clear and add tabs to avoid issues with layout-defined tabs
         tabLayout.removeAllTabs();
         tabLayout.addTab(tabLayout.newTab().setText("Events"));
         tabLayout.addTab(tabLayout.newTab().setText("Profiles"));
         tabLayout.addTab(tabLayout.newTab().setText("Images"));
         tabLayout.addTab(tabLayout.newTab().setText("Notifications"));
+        tabLayout.addTab(tabLayout.newTab().setText("Comments"));
 
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
@@ -85,6 +85,8 @@ public class AdminActivity extends AppCompatActivity {
             loadImages();
         } else if (currentTab.equalsIgnoreCase("Notifications")) {
             loadNotifications();
+        } else if (currentTab.equalsIgnoreCase("Comments")) {
+            loadComments();
         } else {
             String collectionPath = currentTab.equalsIgnoreCase("Events") ? "events" : "accounts";
             db.collection(collectionPath).get().addOnSuccessListener(queryDocumentSnapshots -> {
@@ -95,7 +97,6 @@ public class AdminActivity extends AppCompatActivity {
                             event.setId(doc.getId());
                             itemList.add(event);
                         } catch (Exception e) {
-                            // Fallback for broken data
                             EventModel event = new EventModel();
                             event.setId(doc.getId());
                             event.setName(doc.getString("name"));
@@ -124,7 +125,6 @@ public class AdminActivity extends AppCompatActivity {
             for (QueryDocumentSnapshot doc : snapshots) {
                 String eventId = doc.getId();
                 String eventName = doc.getString("name");
-                // Check if it has a poster field
                 if (doc.contains("poster") && doc.get("poster") != null) {
                     itemList.add(new ImageItem(eventId, eventName != null ? eventName : "Unnamed Event"));
                 }
@@ -153,6 +153,31 @@ public class AdminActivity extends AppCompatActivity {
         });
     }
 
+    private void loadComments() {
+        db.collection("eventComments").get().addOnSuccessListener(snapshots -> {
+            for (QueryDocumentSnapshot doc : snapshots) {
+                String eventId = doc.getId();
+                List<Map<String, Object>> list = (List<Map<String, Object>>) doc.get("commentsList");
+                List<String> removedIds = (List<String>) doc.get("removedComments");
+                if (list != null) {
+                    for (Map<String, Object> map : list) {
+                        String mid = (String) map.get("messageID");
+                        if (removedIds != null && removedIds.contains(mid)) continue;
+                        
+                        CommentModel c = new CommentModel();
+                        c.setMessage((String) map.get("message"));
+                        c.setMessageID(mid);
+                        c.setPosterID((String) map.get("posterID"));
+                        // Storing eventId in parentID field temporarily for identification during delete
+                        c.setParentID(eventId); 
+                        itemList.add(c);
+                    }
+                }
+            }
+            adapter.notifyDataSetChanged();
+        });
+    }
+
     private void deleteItem(Object item) {
         if (item instanceof EventModel) {
             db.collection("events").document(((EventModel) item).getId())
@@ -170,6 +195,14 @@ public class AdminActivity extends AppCompatActivity {
             db.collection("events").document(((ImageItem) item).eventId)
                     .update("poster", null).addOnSuccessListener(v -> {
                         Toast.makeText(this, "Image removed", Toast.LENGTH_SHORT).show();
+                        loadData();
+                    });
+        } else if (item instanceof CommentModel) {
+            CommentModel c = (CommentModel) item;
+            db.collection("eventComments").document(c.getParentID()) // parentID used as eventId here
+                    .update("removedComments", FieldValue.arrayUnion(c.getMessageID()))
+                    .addOnSuccessListener(v -> {
+                        Toast.makeText(this, "Comment removed", Toast.LENGTH_SHORT).show();
                         loadData();
                     });
         }
@@ -210,6 +243,10 @@ public class AdminActivity extends AppCompatActivity {
                 holder.title.setText(n.getMessage());
                 holder.subtitle.setText("From: " + n.getSenderAccountID());
                 holder.btnDelete.setVisibility(View.GONE);
+            } else if (item instanceof CommentModel) {
+                CommentModel c = (CommentModel) item;
+                holder.title.setText("Comment: " + c.getMessage());
+                holder.subtitle.setText("By: " + c.getPosterID());
             }
 
             holder.btnDelete.setOnClickListener(v -> deleteItem(item));
