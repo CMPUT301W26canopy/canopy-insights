@@ -15,6 +15,11 @@ public class ProfileModel {
     private String email;
     private String phoneNumber;
 
+    private boolean notificationEnabled;
+
+    private int notificationsRead;
+
+
     // Empty constructor for Firestore
     public ProfileModel() {}
 
@@ -77,5 +82,21 @@ public class ProfileModel {
     @Override
     public int hashCode() {
         return Objects.hash(accountID);
+    }
+
+    public boolean isNotificationEnabled() {
+        return notificationEnabled;
+    }
+
+    public void setNotificationEnabled(boolean notificationEnabled) {
+        this.notificationEnabled = notificationEnabled;
+    }
+
+    public int getNotificationsRead() {
+        return notificationsRead;
+    }
+
+    public void setNotificationsRead(int notificationsRead) {
+        this.notificationsRead = notificationsRead;
     }
 }

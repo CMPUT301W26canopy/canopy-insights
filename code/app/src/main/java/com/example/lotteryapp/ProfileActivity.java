@@ -22,6 +22,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
+
+import com.google.firebase.firestore.DocumentSnapshot;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Screen showing the user profile.
@@ -36,11 +42,13 @@ public class ProfileActivity extends AppCompatActivity {
 
     private Button btnAdmin;
     private ImageButton inboxButton;
+    private View inboxRedDot;
 
     private EditText nameInput;
     private EditText emailInput;
     private EditText phoneInput;
     private EditText usernameInput;
+    private SwitchCompat notificationsSwitch;
 
     private TextView welcomeText;
 
@@ -49,6 +57,7 @@ public class ProfileActivity extends AppCompatActivity {
     private String originalEmail = "";
     private String originalPhone = "";
     private String originalUsername = "";
+    private boolean originalNotificationsEnabled = false;
 
     private String accountID;
     private DeviceData deviceData;
@@ -66,6 +75,7 @@ public class ProfileActivity extends AppCompatActivity {
         deleteButton = findViewById(R.id.delete_account_btn);
         signOutButton = findViewById(R.id.sign_out_btn);
         inboxButton = findViewById(R.id.inbox_button);
+        inboxRedDot = findViewById(R.id.inbox_red_dot);
         btnAdmin = findViewById(R.id.admin_panel_button);
 
         // Connect EditTexts
@@ -73,6 +83,7 @@ public class ProfileActivity extends AppCompatActivity {
         emailInput = findViewById(R.id.email_address);
         phoneInput = findViewById(R.id.phone_number);
         usernameInput = findViewById(R.id.username_provided);
+        notificationsSwitch = findViewById(R.id.notifications_switch);
 
         // Connect TextView
         welcomeText = findViewById(R.id.welcome_text);
@@ -93,16 +104,36 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Set up listeners to detect changes
         setupTextWatchers();
+        if (notificationsSwitch != null) {
+            notificationsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> checkForChanges());
+        }
 
         // Set up bottom navigation
         setupBottomNav();
         checkAdminStatus();
 
 
-        // Inbox Button logic - FIXED: Now passing accountID to fragment
+        // Inbox Button logic
         if (inboxButton != null) {
             inboxButton.setOnClickListener(v -> {
                 if (accountID != null) {
+                    // Update notificationsRead count to clear the red dot
+                    FirestoreHelper.getDb().collection("notifications").document(accountID).get()
+                            .addOnSuccessListener(documentSnapshot -> {
+                                if (documentSnapshot.exists()) {
+                                    List<Map<String, Object>> list = (List<Map<String, Object>>) documentSnapshot.get("notificationList");
+                                    int totalCount = (list != null) ? list.size() : 0;
+                                    
+                                    FirestoreHelper.getDb().collection("accounts").document(accountID)
+                                            .update("notificationsRead", totalCount)
+                                            .addOnSuccessListener(aVoid -> {
+                                                if (inboxRedDot != null) {
+                                                    inboxRedDot.setVisibility(View.GONE);
+                                                }
+                                            });
+                                }
+                            });
+
                     InboxFragment fragment = InboxFragment.newInstance(accountID);
                     getSupportFragmentManager().beginTransaction()
                             .replace(R.id.fragment_container, fragment)
@@ -176,13 +207,14 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void revertChanges() {
-        if (usernameInput == null || nameInput == null || emailInput == null || phoneInput == null)
+        if (usernameInput == null || nameInput == null || emailInput == null || phoneInput == null || notificationsSwitch == null)
             return;
 
         usernameInput.setText(originalUsername);
         nameInput.setText(originalName);
-        emailInput.setText(originalEmail); // FIXED: should be originalEmail
+        emailInput.setText(originalEmail);
         phoneInput.setText(originalPhone);
+        notificationsSwitch.setChecked(originalNotificationsEnabled);
 
         Toast.makeText(this, "Changes discarded", Toast.LENGTH_SHORT).show();
         checkForChanges();
@@ -195,6 +227,7 @@ public class ProfileActivity extends AppCompatActivity {
         String newName = nameInput != null ? nameInput.getText().toString().trim() : "";
         String newEmail = emailInput != null ? emailInput.getText().toString().trim() : "";
         String newPhone = phoneInput != null ? phoneInput.getText().toString().trim() : "";
+        boolean newNotificationsEnabled = notificationsSwitch != null && notificationsSwitch.isChecked();
 
         Toast.makeText(this, "Updating profile...", Toast.LENGTH_SHORT).show();
 
@@ -203,7 +236,8 @@ public class ProfileActivity extends AppCompatActivity {
                         "username", newUsername,
                         "name", newName,
                         "email", newEmail,
-                        "phoneNumber", newPhone
+                        "phoneNumber", newPhone,
+                        "notificationEnabled", newNotificationsEnabled
                 )
                 .addOnSuccessListener(aVoid -> {
                     if (isFinishing()) return;
@@ -214,12 +248,14 @@ public class ProfileActivity extends AppCompatActivity {
                     originalName = newName;
                     originalEmail = newEmail;
                     originalPhone = newPhone;
+                    originalNotificationsEnabled = newNotificationsEnabled;
 
                     if (welcomeText != null) {
                         welcomeText.setText("Welcome, " + originalUsername);
                     }
 
                     checkForChanges();
+                    checkUnreadNotifications();
                 })
                 .addOnFailureListener(e -> {
                     if (isFinishing()) return;
@@ -250,18 +286,20 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void checkForChanges() {
-        if (usernameInput == null || nameInput == null || emailInput == null || phoneInput == null || updateButton == null)
+        if (usernameInput == null || nameInput == null || emailInput == null || phoneInput == null || notificationsSwitch == null || updateButton == null)
             return;
 
         String currentUsername = usernameInput.getText().toString().trim();
         String currentName = nameInput.getText().toString().trim();
         String currentEmail = emailInput.getText().toString().trim();
         String currentPhone = phoneInput.getText().toString().trim();
+        boolean currentNotificationsEnabled = notificationsSwitch.isChecked();
 
         boolean hasChanged = !currentUsername.equals(originalUsername) ||
                 !currentName.equals(originalName) ||
                 !currentEmail.equals(originalEmail) ||
-                !currentPhone.equals(originalPhone);
+                !currentPhone.equals(originalPhone) ||
+                currentNotificationsEnabled != originalNotificationsEnabled;
 
         if (hasChanged) {
             updateButton.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#2196F3")));
@@ -287,6 +325,12 @@ public class ProfileActivity extends AppCompatActivity {
                             originalName = profile.getName() != null ? profile.getName() : "";
                             originalEmail = profile.getEmail() != null ? profile.getEmail() : "";
                             originalPhone = profile.getPhoneNumber() != null ? profile.getPhoneNumber() : "";
+                            originalNotificationsEnabled = profile.isNotificationEnabled();
+
+                            if (!documentSnapshot.contains("notificationsRead")) {
+                                FirestoreHelper.getDb().collection("accounts").document(accountID)
+                                        .update("notificationsRead", 0);
+                            }
 
                             if (welcomeText != null)
                                 welcomeText.setText("Welcome, " + originalUsername);
@@ -294,14 +338,48 @@ public class ProfileActivity extends AppCompatActivity {
                             if (nameInput != null) nameInput.setText(originalName);
                             if (emailInput != null) emailInput.setText(originalEmail);
                             if (phoneInput != null) phoneInput.setText(originalPhone);
+                            if (notificationsSwitch != null) notificationsSwitch.setChecked(originalNotificationsEnabled);
 
                             checkForChanges();
+                            checkUnreadNotifications();
                         }
                     }
                 })
                 .addOnFailureListener(e -> {
                     if (isFinishing()) return;
                     Toast.makeText(this, "Error loading profile", Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void checkUnreadNotifications() {
+        if (accountID == null || inboxRedDot == null) return;
+
+        FirestoreHelper.getDb().collection("accounts").document(accountID).get()
+                .addOnSuccessListener(userDoc -> {
+                    if (userDoc.exists()) {
+                        boolean enabled = userDoc.getBoolean("notificationEnabled") != null && userDoc.getBoolean("notificationEnabled");
+                        long readCount = userDoc.getLong("notificationsRead") != null ? userDoc.getLong("notificationsRead") : 0;
+
+                        if (enabled) {
+                            FirestoreHelper.getDb().collection("notifications").document(accountID).get()
+                                    .addOnSuccessListener(notifDoc -> {
+                                        if (notifDoc.exists()) {
+                                            List<Map<String, Object>> list = (List<Map<String, Object>>) notifDoc.get("notificationList");
+                                            int totalCount = (list != null) ? list.size() : 0;
+
+                                            if (readCount < totalCount) {
+                                                inboxRedDot.setVisibility(View.VISIBLE);
+                                            } else {
+                                                inboxRedDot.setVisibility(View.GONE);
+                                            }
+                                        } else {
+                                            inboxRedDot.setVisibility(View.GONE);
+                                        }
+                                    });
+                        } else {
+                            inboxRedDot.setVisibility(View.GONE);
+                        }
+                    }
                 });
     }
 
