@@ -15,18 +15,25 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+<<<<<<< Updated upstream
 import com.google.firebase.firestore.DocumentSnapshot;
 
 /**
  * Screen showing the user profile.
  * Loads details from Firestore and allows users to update their information.
  */
+=======
+>>>>>>> Stashed changes
 public class ProfileActivity extends AppCompatActivity {
 
     private Button cancelButton;
     private Button updateButton;
     private Button deleteButton;
     private Button signOutButton;
+<<<<<<< Updated upstream
+=======
+    private Button btnAdmin;
+>>>>>>> Stashed changes
     private ImageButton inboxButton;
 
     private EditText nameInput;
@@ -36,7 +43,6 @@ public class ProfileActivity extends AppCompatActivity {
     
     private TextView welcomeText;
 
-    // To store original data for comparison
     private String originalName = "";
     private String originalEmail = "";
     private String originalPhone = "";
@@ -48,36 +54,52 @@ public class ProfileActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
+<<<<<<< Updated upstream
         
         // Connect Buttons
+=======
+
+        deviceData = DeviceData.getInstance(this);
+
+>>>>>>> Stashed changes
         cancelButton = findViewById(R.id.cancel_button);
         updateButton = findViewById(R.id.update_button);
         deleteButton = findViewById(R.id.delete_account_btn);
         signOutButton = findViewById(R.id.sign_out_btn);
         inboxButton = findViewById(R.id.inbox_button);
 
-        // Connect EditTexts
         nameInput = findViewById(R.id.name_provided);
         emailInput = findViewById(R.id.email_address);
         phoneInput = findViewById(R.id.phone_number);
         usernameInput = findViewById(R.id.username_provided);
+<<<<<<< Updated upstream
         
         // Connect TextView
         welcomeText = findViewById(R.id.welcome_text);
 
         // Receive accountID from Intent
+=======
+
+        welcomeText = findViewById(R.id.welcome_text);
+
+>>>>>>> Stashed changes
         accountID = getIntent().getStringExtra("accountID");
         if (accountID != null) {
             loadProfileData(accountID);
         }
 
-        // Set up listeners to detect changes
         setupTextWatchers();
+<<<<<<< Updated upstream
         
         // Set up bottom navigation
         setupBottomNav();
 
         // Inbox Button logic - FIXED: Now passing accountID to fragment
+=======
+        setupBottomNav();
+        checkAdminStatus();
+
+>>>>>>> Stashed changes
         if (inboxButton != null) {
             inboxButton.setOnClickListener(v -> {
                 if (accountID != null) {
@@ -92,49 +114,75 @@ public class ProfileActivity extends AppCompatActivity {
             });
         }
 
-        // Cancel Button - Revert to original data
         if (cancelButton != null) {
             cancelButton.setOnClickListener(v -> revertChanges());
         }
 
-        // Update Button
         if (updateButton != null) {
             updateButton.setOnClickListener(v -> updateProfile());
         }
 
-        // Delete Button
         if (deleteButton != null) {
-            deleteButton.setOnClickListener(v -> {
-                deleteProfile();
-            });
+            deleteButton.setOnClickListener(v -> deleteProfile());
         }
+<<<<<<< Updated upstream
         
         // Sign Out Button
+=======
+
+>>>>>>> Stashed changes
         if (signOutButton != null) {
             signOutButton.setOnClickListener(v -> finish());
         }
+<<<<<<< Updated upstream
+=======
+
+        if (btnAdmin != null) {
+            btnAdmin.setOnClickListener(v -> {
+                Intent intent = new Intent(ProfileActivity.this, AdminActivity.class);
+                startActivity(intent);
+            });
+        }
+>>>>>>> Stashed changes
     }
 
     private void deleteProfile() {
-        if (accountID == null || isFinishing()) return;
+        if (accountID == null || isFinishing()) {
+            return;
+        }
 
         Toast.makeText(this, "Deleting profile...", Toast.LENGTH_SHORT).show();
 
         FirestoreHelper.getDb().collection("accounts").document(accountID)
                 .delete()
                 .addOnSuccessListener(aVoid -> {
+<<<<<<< Updated upstream
                     if (isFinishing()) return;
+=======
+                    if (isFinishing()) {
+                        return;
+                    }
+                    deviceData.logoutUser();
+>>>>>>> Stashed changes
                     Toast.makeText(this, "Profile deleted successfully", Toast.LENGTH_LONG).show();
                     finish();
                 })
                 .addOnFailureListener(e -> {
-                    if (isFinishing()) return;
+                    if (isFinishing()) {
+                        return;
+                    }
                     Toast.makeText(this, "Error deleting profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
     private void revertChanges() {
+<<<<<<< Updated upstream
         if (usernameInput == null || nameInput == null || emailInput == null || phoneInput == null) return;
+=======
+        if (usernameInput == null || nameInput == null || emailInput == null || phoneInput == null) {
+            return;
+        }
+>>>>>>> Stashed changes
 
         usernameInput.setText(originalUsername);
         nameInput.setText(originalName);
@@ -146,7 +194,9 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void updateProfile() {
-        if (accountID == null || isFinishing()) return;
+        if (accountID == null || isFinishing()) {
+            return;
+        }
 
         String newUsername = usernameInput != null ? usernameInput.getText().toString().trim() : "";
         String newName = nameInput != null ? nameInput.getText().toString().trim() : "";
@@ -163,8 +213,15 @@ public class ProfileActivity extends AppCompatActivity {
                         "phoneNumber", newPhone
                 )
                 .addOnSuccessListener(aVoid -> {
+<<<<<<< Updated upstream
                     if (isFinishing()) return;
                     
+=======
+                    if (isFinishing()) {
+                        return;
+                    }
+
+>>>>>>> Stashed changes
                     Toast.makeText(this, "Profile updated successfully!", Toast.LENGTH_SHORT).show();
                     
                     originalUsername = newUsername;
@@ -179,7 +236,9 @@ public class ProfileActivity extends AppCompatActivity {
                     checkForChanges(); 
                 })
                 .addOnFailureListener(e -> {
-                    if (isFinishing()) return;
+                    if (isFinishing()) {
+                        return;
+                    }
                     Toast.makeText(this, "Failed to update profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
@@ -201,17 +260,31 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void checkForChanges() {
+<<<<<<< Updated upstream
         if (usernameInput == null || nameInput == null || emailInput == null || phoneInput == null || updateButton == null) return;
+=======
+        if (usernameInput == null || nameInput == null || emailInput == null || phoneInput == null
+                || updateButton == null) {
+            return;
+        }
+>>>>>>> Stashed changes
 
         String currentUsername = usernameInput.getText().toString().trim();
         String currentName = nameInput.getText().toString().trim();
         String currentEmail = emailInput.getText().toString().trim();
         String currentPhone = phoneInput.getText().toString().trim();
 
+<<<<<<< Updated upstream
         boolean hasChanged = !currentUsername.equals(originalUsername) ||
                              !currentName.equals(originalName) ||
                              !currentEmail.equals(originalEmail) ||
                              !currentPhone.equals(originalPhone);
+=======
+        boolean hasChanged = !currentUsername.equals(originalUsername)
+                || !currentName.equals(originalName)
+                || !currentEmail.equals(originalEmail)
+                || !currentPhone.equals(originalPhone);
+>>>>>>> Stashed changes
 
         if (hasChanged) {
             updateButton.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#2196F3")));
@@ -223,12 +296,16 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void loadProfileData(String accountID) {
-        if (isFinishing()) return;
+        if (isFinishing()) {
+            return;
+        }
 
         FirestoreHelper.getDb().collection("accounts").document(accountID)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
-                    if (isFinishing()) return;
+                    if (isFinishing()) {
+                        return;
+                    }
 
                     if (documentSnapshot.exists()) {
                         ProfileModel profile = documentSnapshot.toObject(ProfileModel.class);
@@ -238,7 +315,13 @@ public class ProfileActivity extends AppCompatActivity {
                             originalEmail = profile.getEmail() != null ? profile.getEmail() : "";
                             originalPhone = profile.getPhoneNumber() != null ? profile.getPhoneNumber() : "";
 
+<<<<<<< Updated upstream
                             if (welcomeText != null) welcomeText.setText("Welcome, " + originalUsername);
+=======
+                            if (welcomeText != null) {
+                                welcomeText.setText("Welcome, " + originalUsername);
+                            }
+>>>>>>> Stashed changes
                             if (usernameInput != null) usernameInput.setText(originalUsername);
                             if (nameInput != null) nameInput.setText(originalName);
                             if (emailInput != null) emailInput.setText(originalEmail);
@@ -249,7 +332,9 @@ public class ProfileActivity extends AppCompatActivity {
                     }
                 })
                 .addOnFailureListener(e -> {
-                    if (isFinishing()) return;
+                    if (isFinishing()) {
+                        return;
+                    }
                     Toast.makeText(this, "Error loading profile", Toast.LENGTH_SHORT).show();
                 });
     }
@@ -267,10 +352,22 @@ public class ProfileActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.navHistory).setOnClickListener(v ->
-                Toast.makeText(this, "History — coming soon", Toast.LENGTH_SHORT).show());
+                HistoryActivity.openFrom(this, accountID));
 
+<<<<<<< Updated upstream
         findViewById(R.id.navProfile).setOnClickListener(v ->{
             Toast.makeText(this, "Already on profile", Toast.LENGTH_SHORT).show();
         });
     }
+=======
+        findViewById(R.id.navProfile).setOnClickListener(v ->
+                Toast.makeText(this, "Already on profile", Toast.LENGTH_SHORT).show());
+    }
+
+    private void checkAdminStatus() {
+        if (btnAdmin != null) {
+            btnAdmin.setVisibility(View.VISIBLE);
+        }
+    }
+>>>>>>> Stashed changes
 }

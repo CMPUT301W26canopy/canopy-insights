@@ -1,18 +1,27 @@
 package com.example.lotteryapp;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageButton;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ImageButton;
-import android.widget.Toast;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -23,7 +32,9 @@ public class InboxFragment extends Fragment {
 
     private String accountID;
     private MyInboxRecyclerViewAdapter adapter;
-    private List<NotificationModel> notificationList = new ArrayList<>();
+    private final List<NotificationModel> notificationList = new ArrayList<>();
+    private RecyclerView recyclerView;
+    private TextView emptyView;
 
     public InboxFragment() {
     }
@@ -54,12 +65,13 @@ public class InboxFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        RecyclerView recyclerView = view.findViewById(R.id.list);
+        recyclerView = view.findViewById(R.id.list);
+        emptyView = view.findViewById(R.id.tv_empty_inbox);
+
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new MyInboxRecyclerViewAdapter(notificationList);
         recyclerView.setAdapter(adapter);
 
-        // Close button logic
         ImageButton btnClose = view.findViewById(R.id.btn_close_inbox);
         if (btnClose != null) {
             btnClose.setOnClickListener(v -> {
@@ -69,10 +81,11 @@ public class InboxFragment extends Fragment {
             });
         }
 
-        if (accountID != null) {
+        if (accountID != null && !accountID.trim().isEmpty()) {
             fetchNotifications();
         } else {
             Toast.makeText(getContext(), "Error: No Account ID found", Toast.LENGTH_SHORT).show();
+            updateEmptyState();
         }
     }
 
@@ -81,27 +94,102 @@ public class InboxFragment extends Fragment {
                 .document(accountID)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
+                    notificationList.clear();
+
                     if (documentSnapshot.exists()) {
-                        // Retrieve the list named "notificationList" from the document
-                        List<Map<String, Object>> list = (List<Map<String, Object>>) documentSnapshot.get("notificationList");
-                        if (list != null) {
-                            notificationList.clear();
-                            for (Map<String, Object> map : list) {
-                                NotificationModel notif = new NotificationModel();
-                                notif.setSenderAccountID((String) map.get("senderAccountID"));
-                                notif.setReceiverAccountID((String) map.get("receiverAccountID"));
-                                notif.setMessage((String) map.get("message"));
-                                notif.setTimestamp((String) map.get("timestamp"));
-                                notificationList.add(notif);
+                        Object listObject = documentSnapshot.get("notificationList");
+                        if (listObject instanceof List) {
+                            List<?> rawList = (List<?>) listObject;
+
+                            for (Object rawItem : rawList) {
+                                if (!(rawItem instanceof Map)) {
+                                    continue;
+                                }
+
+                                Map<String, Object> map = (Map<String, Object>) rawItem;
+                                NotificationModel notification = new NotificationModel();
+                                notification.setSenderAccountID(asString(map.get("senderAccountID")));
+                                notification.setReceiverAccountID(asString(map.get("receiverAccountID")));
+                                notification.setMessage(asString(map.get("message")));
+                                notification.setTimestamp(asString(map.get("timestamp")));
+                                notification.setEventId(firstNonBlank(
+                                        asString(map.get("eventID")),
+                                        asString(map.get("eventId"))
+                                ));
+                                notificationList.add(notification);
                             }
-                            adapter.notifyDataSetChanged();
                         }
                     }
+
+                    Collections.sort(notificationList, (left, right) ->
+                            Long.compare(parseTimestamp(right.getTimestamp()), parseTimestamp(left.getTimestamp())));
+
+                    adapter.notifyDataSetChanged();
+                    updateEmptyState();
                 })
                 .addOnFailureListener(e -> {
                     if (isAdded()) {
                         Toast.makeText(getContext(), "Failed to load notifications", Toast.LENGTH_SHORT).show();
                     }
+                    updateEmptyState();
                 });
+    }
+
+    private void updateEmptyState() {
+        boolean isEmpty = notificationList.isEmpty();
+        recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+        emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+    }
+
+    private long parseTimestamp(String rawValue) {
+        if (rawValue == null || rawValue.trim().isEmpty()) {
+            return 0L;
+        }
+
+        if (rawValue.matches("\\d{10}")) {
+            try {
+                int year = Calendar.getInstance().get(Calendar.YEAR);
+                String expanded = year + rawValue;
+                SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
+                format.setLenient(false);
+                Date parsed = format.parse(expanded);
+                return parsed != null ? parsed.getTime() : 0L;
+            } catch (ParseException ignored) {
+            }
+        }
+
+        String[] patterns = {
+                "yyyy-MM-dd HH:mm:ss",
+                "yyyy-MM-dd",
+                "MM-dd-yyyy"
+        };
+
+        for (String pattern : patterns) {
+            try {
+                SimpleDateFormat format = new SimpleDateFormat(pattern, Locale.getDefault());
+                format.setLenient(false);
+                Date parsed = format.parse(rawValue);
+                if (parsed != null) {
+                    return parsed.getTime();
+                }
+            } catch (ParseException ignored) {
+            }
+        }
+
+        return 0L;
+    }
+
+    private String asString(Object value) {
+        return value == null ? null : String.valueOf(value);
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (first != null && !first.trim().isEmpty()) {
+            return first;
+        }
+        if (second != null && !second.trim().isEmpty()) {
+            return second;
+        }
+        return null;
     }
 }

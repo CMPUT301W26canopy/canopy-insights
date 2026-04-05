@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
+    android:background="#F8F5FB"
     android:clickable="true"
     android:focusable="true"
     android:orientation="vertical">
 
-    <!-- Header with Close Button -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:elevation="4dp"
         android:padding="16dp">
 
         <TextView
@@ -26,20 +25,34 @@
 
         <ImageButton
             android:id="@+id/btn_close_inbox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_alignParentEnd="true"
             android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Close"
             android:src="@android:drawable/ic_menu_close_clear_cancel" />
     </RelativeLayout>
 
+    <TextView
+        android:id="@+id/tv_empty_inbox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="32dp"
+        android:layout_marginEnd="24dp"
+        android:gravity="center"
+        android:text="No notifications yet."
+        android:textColor="#7A7383"
+        android:textSize="16sp"
+        android:visibility="gone" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/list"
-        android:name="com.example.lotteryapp.InboxFragment"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layoutManager="LinearLayoutManager"
-        tools:context=".InboxFragment"
-        tools:listitem="@layout/fragment_inbox" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingTop="8dp"
+        android:paddingBottom="24dp" />
 
 </LinearLayout>

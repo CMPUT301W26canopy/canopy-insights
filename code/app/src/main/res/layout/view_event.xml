@@ -41,6 +41,25 @@
             android:textStyle="bold" />
     </LinearLayout>
 
+<<<<<<< Updated upstream
+=======
+    <TextView
+        android:id="@+id/tvEventStatus"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:text="Status : OPEN"
+        android:textColor="#6B5FA6"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/linearLayout" />
+
+    <!-- Bottom nav -->
+>>>>>>> Stashed changes
     <LinearLayout
         android:id="@+id/bot_nav"
         android:layout_width="match_parent"
@@ -97,8 +116,13 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:fillViewport="true"
+<<<<<<< Updated upstream
         app:layout_constraintTop_toBottomOf="@id/linearLayout"
         app:layout_constraintBottom_toTopOf="@+id/buttons_container"
+=======
+        app:layout_constraintTop_toBottomOf="@id/tvEventStatus"
+        app:layout_constraintBottom_toTopOf="@id/bot_nav"
+>>>>>>> Stashed changes
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -126,7 +150,89 @@
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/event_details"
                 android:layout_width="match_parent"
+<<<<<<< Updated upstream
                 android:layout_height="wrap_content" />
+=======
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+            <TextView
+                android:id="@+id/tvEventHelperMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Join the waiting list to enter the draw."
+                android:textColor="#8A5570"
+                android:textSize="15sp" />
+
+            <ImageView
+                android:id="@+id/event_qr_code"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="12dp"
+                android:contentDescription="Event QR Code"
+                android:scaleType="centerInside"
+                android:background="#eeeeee"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/btnJoinWaitingList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="JOIN WAITING LIST"
+                android:backgroundTint="#6B5FA6"
+                android:textColor="@android:color/white"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/btnLeaveWaitingList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="LEAVE WAITING LIST"
+                android:backgroundTint="#F44336"
+                android:textColor="@android:color/white"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnDeclineSelection"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:backgroundTint="#D8D0E7"
+                    android:text="DECLINE"
+                    android:textColor="#5F586A"
+                    android:visibility="gone" />
+
+                <Button
+                    android:id="@+id/btnAcceptSelection"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="#6B5FA6"
+                    android:text="ACCEPT"
+                    android:textColor="@android:color/white"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnComments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="VIEW COMMENTS"
+                android:backgroundTint="#888888"
+                android:textColor="@android:color/white" />
+>>>>>>> Stashed changes
 
         </LinearLayout>
     </ScrollView>
