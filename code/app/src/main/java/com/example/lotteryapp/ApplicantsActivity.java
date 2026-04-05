@@ -1,5 +1,6 @@
 package com.example.lotteryapp;
 
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -15,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.WriteBatch;
 
@@ -33,7 +35,7 @@ public class ApplicantsActivity extends AppCompatActivity {
     private final List<Map<String, String>> displayList    = new ArrayList<>();
     private RecyclerView.Adapter adapter;
 
-    private Button btnRunLottery, btnReplacementDraw, btnCancelNoShows, btnInvite;
+    private Button btnRunLottery, btnReplacementDraw, btnCancelNoShows, btnInvite, btnViewEvent;
     private EditText etPrice, etDrawDate, etTotalSpots, etDescription;
     private TextView tvParticipantsLabel, tvApplicantCount, tvVisibility;
     private View participantsContainer;
@@ -50,15 +52,11 @@ public class ApplicantsActivity extends AppCompatActivity {
         totalSpots = getIntent().getIntExtra("TOTAL_SPOTS", 0);
         double price = getIntent().getDoubleExtra("PRICE", 0);
         String description = getIntent().getStringExtra("DESCRIPTION");
-        String visibility = getIntent().getStringExtra("VISIBILITY");
 
         // bind views
         ((TextView) findViewById(R.id.tvEventTitle)).setText(eventName);
         ((TextView) findViewById(R.id.tvEventDate)).setText(eventDate);
         tvVisibility = findViewById(R.id.tvVisibility);
-        if (visibility != null) {
-            tvVisibility.setText(visibility.toUpperCase());
-        }
 
         etPrice           = findViewById(R.id.etPrice);
         etDrawDate        = findViewById(R.id.etDrawDate);
@@ -71,6 +69,8 @@ public class ApplicantsActivity extends AppCompatActivity {
         btnReplacementDraw = findViewById(R.id.btnReplacementDraw);
         btnCancelNoShows  = findViewById(R.id.btnCancelNoShows);
         btnInvite         = findViewById(R.id.btnInvite);
+        btnViewEvent      = findViewById(R.id.viewEvent);
+
 
         // populate editable fields
         etPrice.setText(String.valueOf((int) price));
@@ -86,6 +86,13 @@ public class ApplicantsActivity extends AppCompatActivity {
 
         // back
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+
+        // view event button
+        btnViewEvent.setOnClickListener(v -> {
+            Intent intent = new Intent(this, EventActivity.class);
+            intent.putExtra("EVENT_ID", eventId);
+            startActivity(intent);
+        });
 
         // three dot menu — save changes
         findViewById(R.id.btnMenu).setOnClickListener(v -> saveChanges());
@@ -145,7 +152,27 @@ public class ApplicantsActivity extends AppCompatActivity {
         };
         recyclerView.setAdapter(adapter);
 
+        loadEventVisibility();
         loadApplicants();
+    }
+
+    private void loadEventVisibility() {
+        if (eventId == null) return;
+        FirestoreHelper.getDb().collection("events").document(eventId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String visibility = documentSnapshot.getString("visibility");
+                        if (visibility != null) {
+                            tvVisibility.setText(visibility.toUpperCase());
+                        } else {
+                            tvVisibility.setText("PUBLIC"); // default
+                        }
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    tvVisibility.setText("ERROR");
+                });
     }
 
     private void toggleParticipants() {
@@ -318,6 +345,10 @@ public class ApplicantsActivity extends AppCompatActivity {
                     WriteBatch batch = FirestoreHelper.getDb().batch();
                     for (QueryDocumentSnapshot doc : snap) batch.delete(doc.getReference());
                     batch.delete(FirestoreHelper.getDb().collection("events").document(eventId));
+                    
+                    // Also delete comments document
+                    batch.delete(FirestoreHelper.getDb().collection("eventComments").document(eventId));
+
                     batch.commit()
                             .addOnSuccessListener(v -> {
                                 Toast.makeText(this, "Event deleted", Toast.LENGTH_SHORT).show();

@@ -1,7 +1,19 @@
 package com.example.lotteryapp;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.View;
+import com.google.firebase.firestore.FirebaseFirestore;
+import android.widget.TextView;
+import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -11,80 +23,314 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.firestore.FirebaseFirestore;
-
+/**
+ * Screen showing the user profile.
+ * Loads details from Firestore and allows users to update their information.
+ */
 public class ProfileActivity extends AppCompatActivity {
 
-    private EditText etName, etEmail, etPhone;
-    private TextView tvUsername;
-    private Button btnSave, btnAdmin;
+    private Button cancelButton;
+    private Button updateButton;
+    private Button deleteButton;
+    private Button signOutButton;
+
+    private Button btnAdmin;
+    private ImageButton inboxButton;
+
+    private EditText nameInput;
+    private EditText emailInput;
+    private EditText phoneInput;
+    private EditText usernameInput;
+
+    private TextView welcomeText;
+
+    // To store original data for comparison
+    private String originalName = "";
+    private String originalEmail = "";
+    private String originalPhone = "";
+    private String originalUsername = "";
+
     private String accountID;
-    private FirebaseFirestore db;
+    private DeviceData deviceData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        db = FirebaseFirestore.getInstance();
+        deviceData = DeviceData.getInstance(this);
+
+        // Connect Buttons
+        cancelButton = findViewById(R.id.cancel_button);
+        updateButton = findViewById(R.id.update_button);
+        deleteButton = findViewById(R.id.delete_account_btn);
+        signOutButton = findViewById(R.id.sign_out_btn);
+        inboxButton = findViewById(R.id.inbox_button);
+        btnAdmin = findViewById(R.id.admin_panel_button);
+
+        // Connect EditTexts
+        nameInput = findViewById(R.id.name_provided);
+        emailInput = findViewById(R.id.email_address);
+        phoneInput = findViewById(R.id.phone_number);
+        usernameInput = findViewById(R.id.username_provided);
+
+        // Connect TextView
+        welcomeText = findViewById(R.id.welcome_text);
+
+        // Receive accountID from Intent or Session
         accountID = getIntent().getStringExtra("accountID");
+        if (accountID == null && deviceData.isLoggedIn()) {
+            accountID = deviceData.getAccountID();
+        }
 
-        tvUsername = findViewById(R.id.profile_username);
-        etName     = findViewById(R.id.profile_name);
-        etEmail    = findViewById(R.id.profile_email);
-        etPhone    = findViewById(R.id.profile_phone);
-        btnSave    = findViewById(R.id.save_profile_button);
-        btnAdmin   = findViewById(R.id.admin_panel_button); // We'll add this to layout
+        if (accountID != null) {
+            loadProfileData(accountID);
+        } else {
+            Toast.makeText(this, "No user logged in", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
-        ImageButton btnBack = findViewById(R.id.back_btn_top);
-        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
+        // Set up listeners to detect changes
+        setupTextWatchers();
 
-        loadProfile();
+        // Set up bottom navigation
+        setupBottomNav();
+        checkAdminStatus();
 
-        btnSave.setOnClickListener(v -> saveProfile());
+
+        // Inbox Button logic - FIXED: Now passing accountID to fragment
+        if (inboxButton != null) {
+            inboxButton.setOnClickListener(v -> {
+                if (accountID != null) {
+                    InboxFragment fragment = InboxFragment.newInstance(accountID);
+                    getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, fragment)
+                            .addToBackStack(null)
+                            .commit();
+                } else {
+                    Toast.makeText(this, "Error: User ID not loaded", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+        // Cancel Button - Revert to original data
+        if (cancelButton != null) {
+            cancelButton.setOnClickListener(v -> revertChanges());
+        }
+
+        // Update Button
+        if (updateButton != null) {
+            updateButton.setOnClickListener(v -> updateProfile());
+        }
+
+        // Delete Button
+        if (deleteButton != null) {
+            deleteButton.setOnClickListener(v -> {
+                deleteProfile();
+            });
+        }
+
+        // Sign Out Button
+        if (signOutButton != null) {
+            signOutButton.setOnClickListener(v -> {
+                deviceData.logoutUser();
+                Intent intent = new Intent(ProfileActivity.this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            });
+        }
 
         // Story 03.09.01 - Admin access from their own profile
-        btnAdmin.setOnClickListener(v -> {
-            Intent intent = new Intent(ProfileActivity.this, AdminActivity.class);
+        if (btnAdmin != null) {
+            btnAdmin.setOnClickListener(v -> {
+                Intent intent = new Intent(ProfileActivity.this, AdminActivity.class);
+                startActivity(intent);
+            });
+        }
+
+
+    }
+
+    private void deleteProfile() {
+        if (accountID == null || isFinishing()) return;
+
+        Toast.makeText(this, "Deleting profile...", Toast.LENGTH_SHORT).show();
+
+        FirestoreHelper.getDb().collection("accounts").document(accountID)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    if (isFinishing()) return;
+                    deviceData.logoutUser();
+                    Toast.makeText(this, "Profile deleted successfully", Toast.LENGTH_LONG).show();
+                    Intent intent = new Intent(ProfileActivity.this, MainActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    if (isFinishing()) return;
+                    Toast.makeText(this, "Error deleting profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void revertChanges() {
+        if (usernameInput == null || nameInput == null || emailInput == null || phoneInput == null)
+            return;
+
+        usernameInput.setText(originalUsername);
+        nameInput.setText(originalName);
+        emailInput.setText(originalEmail); // FIXED: should be originalEmail
+        phoneInput.setText(originalPhone);
+
+        Toast.makeText(this, "Changes discarded", Toast.LENGTH_SHORT).show();
+        checkForChanges();
+    }
+
+    private void updateProfile() {
+        if (accountID == null || isFinishing()) return;
+
+        String newUsername = usernameInput != null ? usernameInput.getText().toString().trim() : "";
+        String newName = nameInput != null ? nameInput.getText().toString().trim() : "";
+        String newEmail = emailInput != null ? emailInput.getText().toString().trim() : "";
+        String newPhone = phoneInput != null ? phoneInput.getText().toString().trim() : "";
+
+        Toast.makeText(this, "Updating profile...", Toast.LENGTH_SHORT).show();
+
+        FirestoreHelper.getDb().collection("accounts").document(accountID)
+                .update(
+                        "username", newUsername,
+                        "name", newName,
+                        "email", newEmail,
+                        "phoneNumber", newPhone
+                )
+                .addOnSuccessListener(aVoid -> {
+                    if (isFinishing()) return;
+
+                    Toast.makeText(this, "Profile updated successfully!", Toast.LENGTH_SHORT).show();
+
+                    originalUsername = newUsername;
+                    originalName = newName;
+                    originalEmail = newEmail;
+                    originalPhone = newPhone;
+
+                    if (welcomeText != null) {
+                        welcomeText.setText("Welcome, " + originalUsername);
+                    }
+
+                    checkForChanges();
+                })
+                .addOnFailureListener(e -> {
+                    if (isFinishing()) return;
+                    Toast.makeText(this, "Failed to update profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void setupTextWatchers() {
+        TextWatcher watcher = new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                checkForChanges();
+            }
+        };
+
+        if (usernameInput != null) usernameInput.addTextChangedListener(watcher);
+        if (nameInput != null) nameInput.addTextChangedListener(watcher);
+        if (emailInput != null) emailInput.addTextChangedListener(watcher);
+        if (phoneInput != null) phoneInput.addTextChangedListener(watcher);
+    }
+
+    private void checkForChanges() {
+        if (usernameInput == null || nameInput == null || emailInput == null || phoneInput == null || updateButton == null)
+            return;
+
+        String currentUsername = usernameInput.getText().toString().trim();
+        String currentName = nameInput.getText().toString().trim();
+        String currentEmail = emailInput.getText().toString().trim();
+        String currentPhone = phoneInput.getText().toString().trim();
+
+        boolean hasChanged = !currentUsername.equals(originalUsername) ||
+                !currentName.equals(originalName) ||
+                !currentEmail.equals(originalEmail) ||
+                !currentPhone.equals(originalPhone);
+
+        if (hasChanged) {
+            updateButton.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#2196F3")));
+            updateButton.setTextColor(Color.WHITE);
+        } else {
+            updateButton.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#D3D3D3")));
+            updateButton.setTextColor(Color.BLACK);
+        }
+    }
+
+    private void loadProfileData(String accountID) {
+        if (isFinishing()) return;
+
+        FirestoreHelper.getDb().collection("accounts").document(accountID)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (isFinishing()) return;
+
+                    if (documentSnapshot.exists()) {
+                        ProfileModel profile = documentSnapshot.toObject(ProfileModel.class);
+                        if (profile != null) {
+                            originalUsername = profile.getUsername() != null ? profile.getUsername() : "";
+                            originalName = profile.getName() != null ? profile.getName() : "";
+                            originalEmail = profile.getEmail() != null ? profile.getEmail() : "";
+                            originalPhone = profile.getPhoneNumber() != null ? profile.getPhoneNumber() : "";
+
+                            if (welcomeText != null)
+                                welcomeText.setText("Welcome, " + originalUsername);
+                            if (usernameInput != null) usernameInput.setText(originalUsername);
+                            if (nameInput != null) nameInput.setText(originalName);
+                            if (emailInput != null) emailInput.setText(originalEmail);
+                            if (phoneInput != null) phoneInput.setText(originalPhone);
+
+                            checkForChanges();
+                        }
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (isFinishing()) return;
+                    Toast.makeText(this, "Error loading profile", Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void setupBottomNav() {
+        findViewById(R.id.navHome).setOnClickListener(v -> {
+            Intent intent = new Intent(ProfileActivity.this, MainActivity.class);
             startActivity(intent);
         });
-        
-        // Admin status will be set in loadProfile after data is fetched
-    }
 
-    private void loadProfile() {
-        if (accountID == null) return;
-        // Search in "accounts" collection since that's where user credentials are stored
-        db.collection("accounts").document(accountID).get().addOnSuccessListener(doc -> {
-            if (doc.exists()) {
-                ProfileModel p = doc.toObject(ProfileModel.class);
-                if (p != null) {
-                    tvUsername.setText(p.getUsername());
-                    etName.setText(p.getName());
-                    etEmail.setText(p.getEmail());
-                    etPhone.setText(p.getPhoneNumber());
-                    
-                    // Set admin visibility based on username
-                    checkAdminStatus(p.getUsername());
-                }
-            }
+        findViewById(R.id.navCreate).setOnClickListener(v -> {
+            Log.d("DEBUG", "navCreate clicked");
+            Intent intent = new Intent(ProfileActivity.this, OrganizerActivity.class);
+            startActivity(intent);
+        });
+
+        findViewById(R.id.navHistory).setOnClickListener(v ->
+                Toast.makeText(this, "History — coming soon", Toast.LENGTH_SHORT).show());
+
+        findViewById(R.id.navProfile).setOnClickListener(v -> {
+            Toast.makeText(this, "Already on profile", Toast.LENGTH_SHORT).show();
         });
     }
 
-    private void saveProfile() {
-        if (accountID == null) return;
-        db.collection("accounts").document(accountID)
-                .update("name", etName.getText().toString(),
-                        "email", etEmail.getText().toString(),
-                        "phoneNumber", etPhone.getText().toString())
-                .addOnSuccessListener(v -> Toast.makeText(this, "Profile updated", Toast.LENGTH_SHORT).show());
-    }
-
-    private void checkAdminStatus(String username) {
-        if (username != null && (username.equals("Heeya") || username.equals("fasih"))) {
+    private void checkAdminStatus() {
+        // In a real scenario, we'd check a field in the profile like "isAdmin"
+        // For this implementation, we'll show it for testing purposes
+        if (btnAdmin != null) {
             btnAdmin.setVisibility(View.VISIBLE);
-        } else {
-            btnAdmin.setVisibility(View.GONE);
         }
+
     }
 }

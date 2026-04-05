@@ -165,7 +165,22 @@
                 android:textColor="@android:color/white"
                 android:visibility="gone" />
 
+            <Button
+                android:id="@+id/btnComments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="VIEW COMMENTS"
+                android:backgroundTint="#888888"
+                android:textColor="@android:color/white" />
+
         </LinearLayout>
     </ScrollView>
+
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:elevation="10dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

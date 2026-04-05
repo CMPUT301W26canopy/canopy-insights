@@ -2,7 +2,9 @@ package com.example.lotteryapp;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,8 +32,8 @@ public class EventActivity extends AppCompatActivity {
     private final List<String> eventDetailsList = new ArrayList<>();
     private SimpleTextAdapter adapter;
     private TextView costHeading, eventHeading;
-    private ImageView qrCodeView;
-    private Button btnJoin, btnLeave;
+    private ImageView qrCodeView, eventImageView;
+    private Button btnJoin, btnLeave, btnComments;
     private String eventId, userId;
     private boolean isOnWaitingList = false;
     private boolean isInvitedHost = false;
@@ -55,12 +57,11 @@ public class EventActivity extends AppCompatActivity {
         eventHeading = findViewById(R.id.event_heading);
         btnJoin  = findViewById(R.id.btnJoinWaitingList);
         btnLeave = findViewById(R.id.btnLeaveWaitingList);
+        btnComments = findViewById(R.id.btnComments);
+        eventImageView = findViewById(R.id.event_image);
 
         ImageButton backBtnTop = findViewById(R.id.back_btn_top);
         if (backBtnTop != null) backBtnTop.setOnClickListener(v -> finish());
-
-        ImageView eventImage = findViewById(R.id.event_image);
-        if (eventImage != null) eventImage.setImageResource(R.mipmap.ic_launcher);
 
         eventId = getIntent().getStringExtra("EVENT_ID");
         if (eventId != null) {
@@ -70,6 +71,18 @@ public class EventActivity extends AppCompatActivity {
 
         if (btnJoin != null) btnJoin.setOnClickListener(v -> joinWaitingList());
         if (btnLeave != null) btnLeave.setOnClickListener(v -> leaveWaitingList());
+        
+        if (btnComments != null) {
+            btnComments.setOnClickListener(v -> {
+                if (eventId != null) {
+                    CommentsFragment fragment = CommentsFragment.newInstance(eventId);
+                    getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, fragment)
+                            .addToBackStack(null)
+                            .commit();
+                }
+            });
+        }
 
         setupBottomNav();
         qrCodeView = findViewById(R.id.event_qr_code);
@@ -89,12 +102,14 @@ public class EventActivity extends AppCompatActivity {
                         String date = documentSnapshot.getString("date");
                         String loc  = documentSnapshot.getString("location");
                         String age  = documentSnapshot.getString("ageGroup");
+                        String poster = documentSnapshot.getString("posterImage");
                         Long price  = documentSnapshot.getLong("price");
                         Long spots  = documentSnapshot.getLong("totalSpots");
                         if (name  != null) event.setName(name);
                         if (date  != null) event.setDate(date);
                         if (loc   != null) event.setLocation(loc);
                         if (age   != null) event.setAgeGroup(age);
+                        if (poster != null) event.setPosterImage(poster);
                         if (price != null) event.setPrice(price.doubleValue());
                         if (spots != null) event.setTotalSpots(spots.intValue());
                     }
@@ -119,6 +134,19 @@ public class EventActivity extends AppCompatActivity {
                         if (eventHeading != null)
                             eventHeading.setText(event.getName());
                         
+                        // Load poster image
+                        if (eventImageView != null && event.getPosterImage() != null && !event.getPosterImage().isEmpty()) {
+                            try {
+                                byte[] decodedString = Base64.decode(event.getPosterImage(), Base64.DEFAULT);
+                                Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                                eventImageView.setImageBitmap(decodedByte);
+                            } catch (Exception e) {
+                                eventImageView.setImageResource(R.mipmap.ic_launcher);
+                            }
+                        } else if (eventImageView != null) {
+                            eventImageView.setImageResource(R.mipmap.ic_launcher);
+                        }
+
                         adapter.notifyDataSetChanged();
                         updateJoinLeaveButtons();
 
