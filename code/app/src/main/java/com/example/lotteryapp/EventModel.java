@@ -23,6 +23,10 @@ public class EventModel {
     private String description;
     private String posterImage; // Base64 or URL
 
+    private boolean geolocationVerification;
+    private ArrayList<String> geolocationList;
+
+
     public EventModel() {}
 
     public EventModel(String name, String date, String ageGroup, String location,
@@ -119,5 +123,30 @@ public class EventModel {
 
     public boolean isOnWaitingList(String userId) {
         return waitingList != null && waitingList.contains(userId);
+    }
+
+    public boolean isGeolocationVerification() {
+        return geolocationVerification;
+    }
+
+    public void setGeolocationVerification(boolean geolocationVerification) {
+        this.geolocationVerification = geolocationVerification;
+    }
+
+    public ArrayList<String> getGeolocationList() {
+        return geolocationList;
+    }
+
+    public void setGeolocationList(ArrayList<String> geolocationList) {
+        this.geolocationList = geolocationList;
+    }
+
+    public void addLocation(String location) {
+        if (geolocationList == null) geolocationList = new ArrayList<>();
+        geolocationList.add(location);
+    }
+
+    public void removeLocation(String location) {
+        if (geolocationList != null) geolocationList.remove(location);
     }
 }
