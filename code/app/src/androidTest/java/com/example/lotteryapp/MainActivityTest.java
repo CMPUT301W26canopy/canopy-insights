@@ -39,6 +39,6 @@ public class MainActivityTest {
     @Test
     public void navToCreateEventActivity(){
         onView(withId(R.id.navCreate)).perform(click());
-        onView(withId(R.id.createEventButton)).check(matches(isDisplayed()));
+        onView(withId(R.id.btnCreateEvent)).check(matches(isDisplayed()));
     }
 }

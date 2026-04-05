@@ -49,13 +49,13 @@ public class ProfileActivity extends AppCompatActivity {
             startActivity(intent);
         });
         
-        // Check if user is admin to show button (simulated for now)
-        checkAdminStatus();
+        // Admin status will be set in loadProfile after data is fetched
     }
 
     private void loadProfile() {
         if (accountID == null) return;
-        db.collection("profiles").document(accountID).get().addOnSuccessListener(doc -> {
+        // Search in "accounts" collection since that's where user credentials are stored
+        db.collection("accounts").document(accountID).get().addOnSuccessListener(doc -> {
             if (doc.exists()) {
                 ProfileModel p = doc.toObject(ProfileModel.class);
                 if (p != null) {
@@ -63,6 +63,9 @@ public class ProfileActivity extends AppCompatActivity {
                     etName.setText(p.getName());
                     etEmail.setText(p.getEmail());
                     etPhone.setText(p.getPhoneNumber());
+                    
+                    // Set admin visibility based on username
+                    checkAdminStatus(p.getUsername());
                 }
             }
         });
@@ -70,16 +73,18 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void saveProfile() {
         if (accountID == null) return;
-        db.collection("profiles").document(accountID)
+        db.collection("accounts").document(accountID)
                 .update("name", etName.getText().toString(),
                         "email", etEmail.getText().toString(),
                         "phoneNumber", etPhone.getText().toString())
                 .addOnSuccessListener(v -> Toast.makeText(this, "Profile updated", Toast.LENGTH_SHORT).show());
     }
 
-    private void checkAdminStatus() {
-        // In a real scenario, we'd check a field in the profile like "isAdmin"
-        // For this implementation, we'll show it for testing purposes
-        btnAdmin.setVisibility(View.VISIBLE);
+    private void checkAdminStatus(String username) {
+        if (username != null && (username.equals("Heeya") || username.equals("fasih"))) {
+            btnAdmin.setVisibility(View.VISIBLE);
+        } else {
+            btnAdmin.setVisibility(View.GONE);
+        }
     }
 }
