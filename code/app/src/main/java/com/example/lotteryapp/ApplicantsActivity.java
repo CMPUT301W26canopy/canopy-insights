@@ -1,8 +1,14 @@
 package com.example.lotteryapp;
 
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,6 +26,8 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.WriteBatch;
 
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,7 +43,7 @@ public class ApplicantsActivity extends AppCompatActivity {
     private final List<Map<String, String>> displayList    = new ArrayList<>();
     private RecyclerView.Adapter adapter;
 
-    private Button btnRunLottery, btnReplacementDraw, btnCancelNoShows, btnInvite, btnViewEvent;
+    private Button btnRunLottery, btnReplacementDraw, btnCancelNoShows, btnInvite, btnViewEvent, btnMap;
     private EditText etPrice, etDrawDate, etTotalSpots, etDescription;
     private TextView tvParticipantsLabel, tvApplicantCount, tvVisibility;
     private View participantsContainer;
@@ -70,6 +78,7 @@ public class ApplicantsActivity extends AppCompatActivity {
         btnCancelNoShows  = findViewById(R.id.btnCancelNoShows);
         btnInvite         = findViewById(R.id.btnInvite);
         btnViewEvent      = findViewById(R.id.viewEvent);
+        btnMap            = findViewById(R.id.btnGeolocation);
 
 
         // populate editable fields
@@ -128,6 +137,17 @@ public class ApplicantsActivity extends AppCompatActivity {
         btnInvite.setOnClickListener(v -> {
             InviteFragment fragment = InviteFragment.newInstance(eventId);
             fragment.show(getSupportFragmentManager(), "InviteFragment");
+        });
+
+        // Export button logic
+        findViewById(R.id.btnExport).setOnClickListener(v -> {
+            downLoadCSV();
+        });
+
+        btnMap.setOnClickListener(v -> {
+            Intent intent = new Intent(this, MapActivity.class);
+            intent.putExtra("EVENT_ID", eventId);
+            startActivity(intent);
         });
 
         // recycler
@@ -372,5 +392,81 @@ public class ApplicantsActivity extends AppCompatActivity {
         }
         active.setBackgroundTintList(ColorStateList.valueOf(0xFF6B5FA6));
         active.setTextColor(0xFFFFFFFF);
+    }
+
+    private void downLoadCSV() {
+        List<String> usernames = new ArrayList<>();
+        List<String> names = new ArrayList<>();
+        List<String> phones = new ArrayList<>();
+        List<String> emails = new ArrayList<>();
+
+        List<String> selectedUserIds = new ArrayList<>();
+        for (Map<String, String> applicant : applicantsList) {
+            if ("selected".equals(applicant.get("status"))) {
+                selectedUserIds.add(applicant.get("userId"));
+            }
+        }
+
+        if (selectedUserIds.isEmpty()) {
+            Toast.makeText(this, "No selected applicants to export.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final int totalToFetch = selectedUserIds.size();
+        final int[] fetchedCount = {0};
+
+        for (String userId : selectedUserIds) {
+            FirestoreHelper.getDb().collection("accounts").document(userId)
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        fetchedCount[0]++;
+                        if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
+                            DocumentSnapshot doc = task.getResult();
+                            usernames.add(doc.getString("username"));
+                            names.add(doc.getString("name"));
+                            phones.add(doc.getString("phoneNumber"));
+                            emails.add(doc.getString("email"));
+                        }
+
+                        if (fetchedCount[0] == totalToFetch) {
+                            saveCsvToFile(usernames, names, phones, emails);
+                        }
+                    });
+        }
+    }
+
+    private void saveCsvToFile(List<String> usernames, List<String> names, List<String> phones, List<String> emails) {
+        StringBuilder csv = new StringBuilder();
+        csv.append("Username,Name,Phone,Email\n");
+        for (int i = 0; i < usernames.size(); i++) {
+            csv.append(usernames.get(i)).append(",")
+               .append(names.get(i)).append(",")
+               .append(phones.get(i)).append(",")
+               .append(emails.get(i)).append("\n");
+        }
+
+        String fileName = "Applicants_" + (eventName != null ? eventName.replace(" ", "_") : "Event") + ".csv";
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+                values.put(MediaStore.MediaColumns.MIME_TYPE, "text/csv");
+                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+
+                Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                if (uri != null) {
+                    try (OutputStream os = getContentResolver().openOutputStream(uri)) {
+                        os.write(csv.toString().getBytes(StandardCharsets.UTF_8));
+                        Toast.makeText(this, "Downloaded CSV file of those who won.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            } else {
+                Toast.makeText(this, "Device version not supported for direct download", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Log.e("CSV_EXPORT", "Error saving CSV", e);
+            Toast.makeText(this, "Failed to save CSV file", Toast.LENGTH_SHORT).show();
+        }
     }
 }
