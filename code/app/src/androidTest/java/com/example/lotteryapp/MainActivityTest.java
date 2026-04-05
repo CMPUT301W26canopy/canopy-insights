@@ -36,5 +36,9 @@ public class MainActivityTest {
         assertEquals("com.example.lotteryapp", appContext.getPackageName());
     }
 
-
+    @Test
+    public void navToCreateEventActivity(){
+        onView(withId(R.id.navCreate)).perform(click());
+        onView(withId(R.id.btnCreateEvent)).check(matches(isDisplayed()));
+    }
 }

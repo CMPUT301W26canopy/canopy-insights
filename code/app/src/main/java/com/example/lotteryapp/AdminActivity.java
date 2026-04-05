@@ -14,11 +14,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.tabs.TabLayout;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class AdminActivity extends AppCompatActivity {
 
@@ -27,10 +29,21 @@ public class AdminActivity extends AppCompatActivity {
     private List<Object> itemList = new ArrayList<>();
     private String currentTab = "Events";
     private FirebaseFirestore db;
+    private DeviceData deviceData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        deviceData = DeviceData.getInstance(this);
+        String username = deviceData.getUsername();
+        
+        if (username == null || !(username.equals("Heeya") || username.equals("fasih"))) {
+            Toast.makeText(this, "Admin Access Denied", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_admin);
 
         db = FirebaseFirestore.getInstance();
@@ -43,6 +56,14 @@ public class AdminActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
 
         TabLayout tabLayout = findViewById(R.id.adminTabLayout);
+        
+        tabLayout.removeAllTabs();
+        tabLayout.addTab(tabLayout.newTab().setText("Events"));
+        tabLayout.addTab(tabLayout.newTab().setText("Profiles"));
+        tabLayout.addTab(tabLayout.newTab().setText("Images"));
+        tabLayout.addTab(tabLayout.newTab().setText("Notifications"));
+        tabLayout.addTab(tabLayout.newTab().setText("Comments"));
+
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
@@ -60,62 +81,97 @@ public class AdminActivity extends AppCompatActivity {
         itemList.clear();
         adapter.notifyDataSetChanged();
 
-        String collectionPath = currentTab.equalsIgnoreCase("Events") ? "events" : 
-                              currentTab.equalsIgnoreCase("Profiles") ? "profiles" : "events";
-
         if (currentTab.equalsIgnoreCase("Images")) {
             loadImages();
-            return;
-        }
-
-        db.collection(collectionPath).get().addOnSuccessListener(queryDocumentSnapshots -> {
-            for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                if (currentTab.equalsIgnoreCase("Events")) {
-                    EventModel event = null;
-                    try {
-                        event = doc.toObject(EventModel.class);
-                    } catch (Exception e) {
-                        event = new EventModel();
-                        event.setName(doc.getString("name"));
-                        event.setWaitingList(new ArrayList<>());
-                    }
-                    if (event != null) {
-                        event.setId(doc.getId());
-                        itemList.add(event);
-                    }
-                } else if (currentTab.equalsIgnoreCase("Profiles")) {
-                    ProfileModel profile = null;
-                    try {
-                        profile = doc.toObject(ProfileModel.class);
-                    } catch (Exception e) {
-                        profile = new ProfileModel();
-                        profile.setName(doc.getString("name"));
-                        profile.setAccountID(doc.getId());
-                    }
-                    if (profile != null) {
-                        itemList.add(profile);
+        } else if (currentTab.equalsIgnoreCase("Notifications")) {
+            loadNotifications();
+        } else if (currentTab.equalsIgnoreCase("Comments")) {
+            loadComments();
+        } else {
+            String collectionPath = currentTab.equalsIgnoreCase("Events") ? "events" : "accounts";
+            db.collection(collectionPath).get().addOnSuccessListener(queryDocumentSnapshots -> {
+                for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                    if (currentTab.equalsIgnoreCase("Events")) {
+                        try {
+                            EventModel event = doc.toObject(EventModel.class);
+                            event.setId(doc.getId());
+                            itemList.add(event);
+                        } catch (Exception e) {
+                            EventModel event = new EventModel();
+                            event.setId(doc.getId());
+                            event.setName(doc.getString("name"));
+                            itemList.add(event);
+                        }
+                    } else {
+                        try {
+                            ProfileModel profile = doc.toObject(ProfileModel.class);
+                            if (profile.getAccountID() == null) profile.setAccountID(doc.getId());
+                            itemList.add(profile);
+                        } catch (Exception e) {
+                            ProfileModel profile = new ProfileModel();
+                            profile.setAccountID(doc.getId());
+                            profile.setUsername(doc.getString("username"));
+                            itemList.add(profile);
+                        }
                     }
                 }
-            }
-            adapter.notifyDataSetChanged();
-        }).addOnFailureListener(e -> {
-            Toast.makeText(this, "Load failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        });
+                adapter.notifyDataSetChanged();
+            }).addOnFailureListener(e -> Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        }
     }
 
     private void loadImages() {
         db.collection("events").get().addOnSuccessListener(snapshots -> {
             for (QueryDocumentSnapshot doc : snapshots) {
-                EventModel event = null;
-                try {
-                    event = doc.toObject(EventModel.class);
-                } catch (Exception e) {
-                    event = new EventModel();
-                    event.setName(doc.getString("name"));
+                String eventId = doc.getId();
+                String eventName = doc.getString("name");
+                if (doc.contains("poster") && doc.get("poster") != null) {
+                    itemList.add(new ImageItem(eventId, eventName != null ? eventName : "Unnamed Event"));
                 }
-                if (event != null) {
-                    event.setId(doc.getId());
-                    itemList.add(event);
+            }
+            adapter.notifyDataSetChanged();
+        });
+    }
+
+    private void loadNotifications() {
+        db.collection("notifications").get().addOnSuccessListener(snapshots -> {
+            for (QueryDocumentSnapshot doc : snapshots) {
+                Object listObj = doc.get("notificationList");
+                if (listObj instanceof List) {
+                    List<Map<String, Object>> list = (List<Map<String, Object>>) listObj;
+                    for (Map<String, Object> map : list) {
+                        NotificationModel n = new NotificationModel();
+                        n.setMessage(String.valueOf(map.get("message")));
+                        n.setSenderAccountID(String.valueOf(map.get("senderAccountID")));
+                        n.setReceiverAccountID(String.valueOf(map.get("receiverAccountID")));
+                        n.setTimestamp(String.valueOf(map.get("timestamp")));
+                        itemList.add(n);
+                    }
+                }
+            }
+            adapter.notifyDataSetChanged();
+        });
+    }
+
+    private void loadComments() {
+        db.collection("eventComments").get().addOnSuccessListener(snapshots -> {
+            for (QueryDocumentSnapshot doc : snapshots) {
+                String eventId = doc.getId();
+                List<Map<String, Object>> list = (List<Map<String, Object>>) doc.get("commentsList");
+                List<String> removedIds = (List<String>) doc.get("removedComments");
+                if (list != null) {
+                    for (Map<String, Object> map : list) {
+                        String mid = (String) map.get("messageID");
+                        if (removedIds != null && removedIds.contains(mid)) continue;
+                        
+                        CommentModel c = new CommentModel();
+                        c.setMessage((String) map.get("message"));
+                        c.setMessageID(mid);
+                        c.setPosterID((String) map.get("posterID"));
+                        // Storing eventId in parentID field temporarily for identification during delete
+                        c.setParentID(eventId); 
+                        itemList.add(c);
+                    }
                 }
             }
             adapter.notifyDataSetChanged();
@@ -130,12 +186,31 @@ public class AdminActivity extends AppCompatActivity {
                         loadData();
                     });
         } else if (item instanceof ProfileModel) {
-            db.collection("profiles").document(((ProfileModel) item).getAccountID())
+            db.collection("accounts").document(((ProfileModel) item).getAccountID())
                     .delete().addOnSuccessListener(v -> {
                         Toast.makeText(this, "Profile deleted", Toast.LENGTH_SHORT).show();
                         loadData();
                     });
+        } else if (item instanceof ImageItem) {
+            db.collection("events").document(((ImageItem) item).eventId)
+                    .update("poster", null).addOnSuccessListener(v -> {
+                        Toast.makeText(this, "Image removed", Toast.LENGTH_SHORT).show();
+                        loadData();
+                    });
+        } else if (item instanceof CommentModel) {
+            CommentModel c = (CommentModel) item;
+            db.collection("eventComments").document(c.getParentID()) // parentID used as eventId here
+                    .update("removedComments", FieldValue.arrayUnion(c.getMessageID()))
+                    .addOnSuccessListener(v -> {
+                        Toast.makeText(this, "Comment removed", Toast.LENGTH_SHORT).show();
+                        loadData();
+                    });
         }
+    }
+
+    private static class ImageItem {
+        String eventId, eventName;
+        ImageItem(String id, String name) { this.eventId = id; this.eventName = name; }
     }
 
     private class AdminAdapter extends RecyclerView.Adapter<AdminAdapter.ViewHolder> {
@@ -149,14 +224,29 @@ public class AdminActivity extends AppCompatActivity {
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             Object item = itemList.get(position);
+            holder.btnDelete.setVisibility(View.VISIBLE);
+
             if (item instanceof EventModel) {
                 EventModel e = (EventModel) item;
                 holder.title.setText(e.getName() != null ? e.getName() : "Unnamed Event");
-                holder.subtitle.setText("ID: " + e.getId());
+                holder.subtitle.setText("Event ID: " + e.getId());
             } else if (item instanceof ProfileModel) {
                 ProfileModel p = (ProfileModel) item;
-                holder.title.setText(p.getName() != null ? p.getName() : p.getUsername() != null ? p.getUsername() : "Unnamed Profile");
-                holder.subtitle.setText("ID: " + p.getAccountID());
+                holder.title.setText(p.getUsername() != null ? p.getUsername() : "Unnamed Profile");
+                holder.subtitle.setText("User ID: " + p.getAccountID());
+            } else if (item instanceof ImageItem) {
+                ImageItem img = (ImageItem) item;
+                holder.title.setText("Poster: " + img.eventName);
+                holder.subtitle.setText("Click delete to clear field");
+            } else if (item instanceof NotificationModel) {
+                NotificationModel n = (NotificationModel) item;
+                holder.title.setText(n.getMessage());
+                holder.subtitle.setText("From: " + n.getSenderAccountID());
+                holder.btnDelete.setVisibility(View.GONE);
+            } else if (item instanceof CommentModel) {
+                CommentModel c = (CommentModel) item;
+                holder.title.setText("Comment: " + c.getMessage());
+                holder.subtitle.setText("By: " + c.getPosterID());
             }
 
             holder.btnDelete.setOnClickListener(v -> deleteItem(item));
