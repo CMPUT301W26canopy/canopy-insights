@@ -15,15 +15,18 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class CreateEventActivity extends AppCompatActivity {
 
     EditText eventNameInput, eventLocationInput, eventPriceInput, eventDescriptionInput,
             eventDateInput, eventTotalSpotsInput;
-    Button createEventButton, btnPrivate;
+    Button createEventButton, btnPrivate, btnGeolocation;
     ImageView eventQRCode;
     private boolean eventCreated = false;
+    private final ArrayList<String> addedLocations = new ArrayList<>();
+    private boolean geolocationVerification = false;
 
     private DeviceData deviceData;
 
@@ -45,6 +48,7 @@ public class CreateEventActivity extends AppCompatActivity {
         eventTotalSpotsInput  = findViewById(R.id.eventTotalSpotsInput);
         createEventButton     = findViewById(R.id.createEventButton);
         btnPrivate            = findViewById(R.id.btnPrivate);
+        btnGeolocation        = findViewById(R.id.btnGeolocation);
         eventQRCode           = findViewById(R.id.eventQRCode);
 
         ImageButton btnBack = findViewById(R.id.btnBack);
@@ -65,6 +69,25 @@ public class CreateEventActivity extends AppCompatActivity {
                 finish();
             }
         });
+
+        btnGeolocation.setOnClickListener(v -> {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.geolocationContainer, new GeolocationFragment())
+                    .addToBackStack(null)
+                    .commit();
+        });
+    }
+
+    public ArrayList<String> getAddedLocations() {
+        return addedLocations;
+    }
+
+    public boolean isGeolocationVerification() {
+        return geolocationVerification;
+    }
+
+    public void setGeolocationVerification(boolean geolocationVerification) {
+        this.geolocationVerification = geolocationVerification;
     }
 
     private void createEvent() {
@@ -114,6 +137,8 @@ public class CreateEventActivity extends AppCompatActivity {
         event.put("ageGroup", "All Ages");
         event.put("organizerId", organizerId);
         event.put("visibility", btnPrivate.getText().toString());
+        event.put("geolocationList", addedLocations);
+        event.put("geolocationVerification", geolocationVerification);
 
         db.collection("events")
                 .add(event)

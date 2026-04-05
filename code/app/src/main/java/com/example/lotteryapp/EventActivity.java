@@ -1,8 +1,13 @@
 package com.example.lotteryapp;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
 import android.os.Bundle;
 import android.util.Base64;
 import android.view.LayoutInflater;
@@ -16,11 +21,16 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.GeoPoint;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +47,9 @@ public class EventActivity extends AppCompatActivity {
     private String eventId, userId;
     private boolean isOnWaitingList = false;
     private boolean isInvitedHost = false;
+    
+    private FusedLocationProviderClient fusedLocationClient;
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +58,7 @@ public class EventActivity extends AppCompatActivity {
 
         DeviceData deviceData = DeviceData.getInstance(this);
         userId = deviceData.getAccountID();
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         RecyclerView eventDescDisplay = findViewById(R.id.event_details);
         if (eventDescDisplay != null) {
@@ -184,12 +198,113 @@ public class EventActivity extends AppCompatActivity {
             Toast.makeText(this, "Co-hosts cannot join the waiting list.", Toast.LENGTH_LONG).show();
             return;
         }
+
+        FirestoreHelper.getDb().collection("events").document(eventId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    Boolean verificationRequired = documentSnapshot.getBoolean("geolocationVerification");
+                    if (verificationRequired != null && verificationRequired) {
+                        List<String> allowedLocations = (List<String>) documentSnapshot.get("geolocationList");
+                        checkLocationAndJoin(allowedLocations);
+                    } else {
+                        // Even if verification is off, try to capture location for the map
+                        tryGetLocationAndJoin();
+                    }
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Failed to verify event settings", Toast.LENGTH_SHORT).show());
+    }
+
+    private void tryGetLocationAndJoin() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            
+            fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
+                performJoin(location);
+            });
+        } else {
+            performJoin(null);
+        }
+    }
+
+    private void checkLocationAndJoin(List<String> allowedLocations) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
+            return;
+        }
+
+        fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
+            if (location != null) {
+                String myLocation = getAddressString(location);
+                Toast.makeText(this, "My location: " + myLocation, Toast.LENGTH_SHORT).show();
+                
+                if (isLocationInAllowedList(location, allowedLocations)) {
+                    performJoin(location);
+                } else {
+                    Toast.makeText(this, "You must be in an allowed location to join this event.", Toast.LENGTH_LONG).show();
+                }
+            } else {
+                Toast.makeText(this, "Could not determine your location. Please ensure location is enabled.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private String getAddressString(Location location) {
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        try {
+            List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+            if (addresses != null && !addresses.isEmpty()) {
+                Address address = addresses.get(0);
+                String city = address.getLocality();
+                String province = address.getAdminArea();
+                if (city != null && province != null) return city + ", " + province;
+                if (city != null) return city;
+                if (province != null) return province;
+                return address.getAddressLine(0);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "Unknown";
+    }
+
+    private boolean isLocationInAllowedList(Location location, List<String> allowedLocations) {
+        if (allowedLocations == null || allowedLocations.isEmpty()) return true;
         
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        try {
+            List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+            if (addresses != null && !addresses.isEmpty()) {
+                Address address = addresses.get(0);
+                String city = address.getLocality();
+                String province = address.getAdminArea();
+                String country = address.getCountryName();
+
+                for (String allowed : allowedLocations) {
+                    String lowerAllowed = allowed.toLowerCase();
+                    if ((city != null && lowerAllowed.contains(city.toLowerCase())) ||
+                        (province != null && lowerAllowed.contains(province.toLowerCase())) ||
+                        (country != null && lowerAllowed.contains(country.toLowerCase()))) {
+                        return true;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    private void performJoin(Location location) {
         Map<String, Object> application = new HashMap<>();
         application.put("eventId", eventId);
         application.put("userId", userId);
         application.put("userName", DeviceData.getInstance(this).getUsername());
         application.put("status", "waiting");
+        
+        if (location != null) {
+            // Storing as a GeoPoint for map display
+            application.put("geoPoint", new GeoPoint(location.getLatitude(), location.getLongitude()));
+        }
 
         FirestoreHelper.getDb().collection("applications")
                 .add(application)
@@ -200,6 +315,18 @@ public class EventActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to join", Toast.LENGTH_SHORT).show());
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                joinWaitingList();
+            } else {
+                Toast.makeText(this, "Location permission is required to join this event.", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private void leaveWaitingList() {
