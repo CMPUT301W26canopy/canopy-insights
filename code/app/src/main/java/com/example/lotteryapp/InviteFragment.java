@@ -22,6 +22,12 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
+<<<<<<< HEAD
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+=======
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 
@@ -33,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+>>>>>>> main
 import java.util.Set;
 
 /**
@@ -118,9 +125,13 @@ public class InviteFragment extends BottomSheetDialogFragment {
             }
         });
 
+<<<<<<< HEAD
+        view.findViewById(R.id.btn_confirm_invite).setOnClickListener(v -> sendInvites());
+=======
         view.findViewById(R.id.btn_confirm_invite).setOnClickListener(v -> {
             sendInvites();
         });
+>>>>>>> main
     }
 
     private void performSearch(String query) {
@@ -180,6 +191,50 @@ public class InviteFragment extends BottomSheetDialogFragment {
             return;
         }
 
+<<<<<<< HEAD
+        Button hostOrParticipantBtn = getView() != null
+                ? getView().findViewById(R.id.hostOrParticipant)
+                : null;
+        String role = hostOrParticipantBtn != null
+                ? hostOrParticipantBtn.getText().toString()
+                : "Participant";
+        String message = "Invitation: You have been invited as a " + role + " to join an event!";
+
+        Task<Void> eventUpdateTask = Tasks.forResult(null);
+        if (role.equalsIgnoreCase("Co-host") && eventId != null) {
+            eventUpdateTask = db.collection("events").document(eventId)
+                    .update("invitedHosts", FieldValue.arrayUnion(selectedIds.toArray()));
+        }
+
+        eventUpdateTask
+                .continueWithTask(task -> {
+                    if (!task.isSuccessful()) {
+                        Exception exception = task.getException();
+                        return Tasks.forException(exception != null
+                                ? exception
+                                : new IllegalStateException("Failed to update event invitees"));
+                    }
+                    return NotificationHelper.sendNotifications(
+                            senderId,
+                            new ArrayList<>(selectedIds),
+                            message,
+                            eventId
+                    );
+                })
+                .addOnSuccessListener(aVoid -> {
+                    if (isAdded()) {
+                        Toast.makeText(getContext(), "Invites sent successfully!", Toast.LENGTH_SHORT).show();
+                        dismiss();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (isAdded()) {
+                        Toast.makeText(getContext(),
+                                "Failed to send invites: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+=======
         Button hostOrParticipantBtn = getView().findViewById(R.id.hostOrParticipant);
         String role = (hostOrParticipantBtn != null) ? hostOrParticipantBtn.getText().toString() : "Participant";
         String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
@@ -219,5 +274,6 @@ public class InviteFragment extends BottomSheetDialogFragment {
                 Toast.makeText(getContext(), "Failed to send invites: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+>>>>>>> main
     }
 }

@@ -24,6 +24,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.lotteryapp.FirestoreHelper;
+import com.example.lotteryapp.NotificationHelper;
 import com.example.lotteryapp.NotificationModel;
 import com.example.lotteryapp.ProfileModel;
 import com.example.lotteryapp.databinding.FragmentSignUpBinding;
@@ -31,12 +32,9 @@ import com.example.lotteryapp.databinding.FragmentSignUpBinding;
 import com.example.lotteryapp.R;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public class SignUpFragment extends Fragment {
 
@@ -173,6 +171,7 @@ public class SignUpFragment extends Fragment {
         ProfileModel profile = new ProfileModel();
         profile.setUsername(username);
         profile.setPassword(password);
+        profile.setNotificationEnabled(true);
         String timestamp = new SimpleDateFormat("MMddHHmmss", Locale.getDefault()).format(new Date());
         profile.setAccountID(timestamp);
 
@@ -194,7 +193,6 @@ public class SignUpFragment extends Fragment {
                     notification.setSenderAccountID(systemAccountID);
                     notification.setReceiverAccountID(profile.getAccountID());
                     notification.setMessage("Welcome to Lottery App!");
-                    notification.setTimestamp(timestamp);
 
                     saveUserAndNotification(profile, notification);
                 })
@@ -204,7 +202,6 @@ public class SignUpFragment extends Fragment {
                     notification.setSenderAccountID("SYSTEM_DEFAULT");
                     notification.setReceiverAccountID(profile.getAccountID());
                     notification.setMessage("Welcome to Lottery App!");
-                    notification.setTimestamp(timestamp);
 
                     saveUserAndNotification(profile, notification);
                 });
@@ -215,18 +212,12 @@ public class SignUpFragment extends Fragment {
                 .document(profile.getAccountID())
                 .set(profile)
                 .addOnSuccessListener(aVoid -> {
-                    // Create a list and add the notification to it
-                    List<NotificationModel> notificationList = new ArrayList<>();
-                    notificationList.add(notification);
-
-                    // Create a data map to hold the list
-                    Map<String, Object> notifData = new HashMap<>();
-                    notifData.put("notificationList", notificationList);
-
-                    // Save to 'notifications' collection, document identified by accountID
-                    FirestoreHelper.getDb().collection("notifications")
-                            .document(profile.getAccountID())
-                            .set(notifData)
+                    NotificationHelper.sendNotifications(
+                                    notification.getSenderAccountID(),
+                                    Collections.singletonList(notification.getReceiverAccountID()),
+                                    notification.getMessage(),
+                                    notification.getEventId()
+                            )
                             .addOnSuccessListener(aVoidNotif -> {
                                 if (!isAdded() || binding == null) return;
                                 binding.loading.setVisibility(View.GONE);

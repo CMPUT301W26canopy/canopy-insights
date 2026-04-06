@@ -21,7 +21,11 @@ public class EventModel {
 
     private String visibility;
     private String description;
+<<<<<<< HEAD
+    private String posterImage;
+=======
     private String posterImage; // Base64 or URL
+>>>>>>> main
 
     private boolean geolocationVerification;
     private ArrayList<String> geolocationList;
