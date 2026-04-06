@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <application
         android:allowBackup="true"
@@ -9,6 +11,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication">
+
+        <!-- TODO: Replace "YOUR_API_KEY" with a real Google Maps API key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="YOUR_API_KEY"/>
 
         <activity
             android:name=".MainActivity"
@@ -45,7 +52,10 @@
 
         <activity android:name=".ApplicantsActivity" android:exported="false"/>
 
+        <activity android:name=".AdminActivity" android:exported="false"/>
+
+        <activity android:name=".MapActivity" android:exported="false"/>
+
     </application>
 
 </manifest>
-

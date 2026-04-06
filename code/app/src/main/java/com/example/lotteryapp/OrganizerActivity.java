@@ -3,27 +3,33 @@ package com.example.lotteryapp;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class OrganizerActivity extends AppCompatActivity {
 
-    // TODO: We need to replace with real accountID
-    private static final String ORGANIZER_ID = "dummy_id";
+    private String organizerId;
+    private DeviceData deviceData;
 
     private final List<EventModel> myEventsList = new ArrayList<>();
     private RecyclerView.Adapter myEventsAdapter;
@@ -35,18 +41,21 @@ public class OrganizerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_organizer);
 
+        deviceData = DeviceData.getInstance(this);
+        if (deviceData.isLoggedIn()) {
+            organizerId = deviceData.getAccountID();
+        }
+
         btnCreateEvent = findViewById(R.id.btnCreateEvent);
         btnMyEvents = findViewById(R.id.btnMyEvents);
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
-        // Create Event tab
         btnCreateEvent.setOnClickListener(v -> {
-            startActivity(new Intent(this, CreateEventActivity.class));
             setActiveTab(btnCreateEvent, btnMyEvents);
+            startActivity(new Intent(this, CreateEventActivity.class));
         });
 
-        // My Events tab
         btnMyEvents.setOnClickListener(v -> {
             setActiveTab(btnMyEvents, btnCreateEvent);
             loadMyEvents();
@@ -92,15 +101,22 @@ public class OrganizerActivity extends AppCompatActivity {
         loadMyEvents();
     }
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
+=======
+    // reload events every time we come back from CreateEventActivity
+>>>>>>> main
     @Override
     protected void onResume() {
         super.onResume();
         loadMyEvents();
     }
 
+<<<<<<< HEAD
 >>>>>>> Stashed changes
+=======
+>>>>>>> main
     private void setActiveTab(Button active, Button inactive) {
         active.setBackgroundTintList(ColorStateList.valueOf(0xFF6B5FA6));
         active.setTextColor(0xFFFFFFFF);
@@ -109,6 +125,7 @@ public class OrganizerActivity extends AppCompatActivity {
     }
 
     private void loadMyEvents() {
+<<<<<<< HEAD
 <<<<<<< Updated upstream
         FirestoreHelper.getDb().collection("events")
                 .whereEqualTo("organizerId", ORGANIZER_ID)
@@ -166,6 +183,47 @@ public class OrganizerActivity extends AppCompatActivity {
                         if (price != null) e.setPrice(price.doubleValue());
                         if (spots != null) e.setTotalSpots(spots.intValue());
                     }
+=======
+        if (organizerId == null) {
+            Toast.makeText(this, "Please sign in to view your events", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Query 1: Events where the user is the primary organizer
+        Task<QuerySnapshot> primaryQuery = FirestoreHelper.getDb().collection("events")
+                .whereEqualTo("organizerId", organizerId)
+                .get();
+
+        // Query 2: Events where the user is in the invitedHosts list (co-hosts)
+        Task<QuerySnapshot> cohostQuery = FirestoreHelper.getDb().collection("events")
+                .whereArrayContains("invitedHosts", organizerId)
+                .get();
+
+        Tasks.whenAllSuccess(primaryQuery, cohostQuery).addOnSuccessListener(results -> {
+            Set<EventModel> mergedEvents = new HashSet<>();
+            for (Object result : results) {
+                QuerySnapshot snapshot = (QuerySnapshot) result;
+                for (QueryDocumentSnapshot doc : snapshot) {
+                    EventModel e = null;
+                    try {
+                        e = doc.toObject(EventModel.class);
+                    } catch (Exception ex) {
+                        e = new EventModel();
+                        e.setWaitingList(new ArrayList<>());
+                        String name = doc.getString("name");
+                        String date = doc.getString("date");
+                        String loc  = doc.getString("location");
+                        String age  = doc.getString("ageGroup");
+                        Long price  = doc.getLong("price");
+                        Long spots  = doc.getLong("totalSpots");
+                        if (name  != null) e.setName(name);
+                        if (date  != null) e.setDate(date);
+                        if (loc   != null) e.setLocation(loc);
+                        if (age   != null) e.setAgeGroup(age);
+                        if (price != null) e.setPrice(price.doubleValue());
+                        if (spots != null) e.setTotalSpots(spots.intValue());
+                    }
+>>>>>>> main
                     e.setId(doc.getId());
                     mergedEvents.add(e);
                 }
@@ -173,7 +231,11 @@ public class OrganizerActivity extends AppCompatActivity {
             myEventsList.clear();
             myEventsList.addAll(mergedEvents);
             myEventsAdapter.notifyDataSetChanged();
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> main
             if (myEventsList.isEmpty()) {
                 Toast.makeText(this, "No events found", Toast.LENGTH_SHORT).show();
             }
@@ -181,18 +243,21 @@ public class OrganizerActivity extends AppCompatActivity {
             Log.e("OrganizerActivity", "Failed to load events", e);
             Toast.makeText(this, "Failed to load events: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         });
+<<<<<<< HEAD
 >>>>>>> Stashed changes
+=======
+>>>>>>> main
     }
 
     private void setupBottomNav() {
-        findViewById(R.id.navHome).setOnClickListener(v -> {
-            startActivity(new Intent(this, MainActivity.class));
-        });
-        findViewById(R.id.navCreate).setOnClickListener(v -> {}); // already here
+        findViewById(R.id.navHome).setOnClickListener(v ->
+                startActivity(new Intent(this, MainActivity.class)));
+        findViewById(R.id.navCreate).setOnClickListener(v -> {});
         findViewById(R.id.navHistory).setOnClickListener(v ->
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
                 Toast.makeText(this, "History — coming soon", Toast.LENGTH_SHORT).show());
+<<<<<<< HEAD
         findViewById(R.id.navProfile).setOnClickListener(v ->
                 startActivity(new Intent(this, LoginActivity.class)));
 =======
@@ -201,6 +266,8 @@ public class OrganizerActivity extends AppCompatActivity {
 =======
                 NavigationHelper.openHistory(this));
 >>>>>>> Stashed changes
+=======
+>>>>>>> main
         findViewById(R.id.navProfile).setOnClickListener(v -> {
             if (deviceData.isLoggedIn()) {
                 Intent intent = new Intent(this, ProfileActivity.class);
@@ -210,6 +277,9 @@ public class OrganizerActivity extends AppCompatActivity {
                 startActivity(new Intent(this, LoginActivity.class));
             }
         });
+<<<<<<< HEAD
 >>>>>>> Stashed changes
+=======
+>>>>>>> main
     }
 }

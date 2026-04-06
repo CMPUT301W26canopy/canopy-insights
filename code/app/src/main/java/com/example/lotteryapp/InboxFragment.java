@@ -117,6 +117,7 @@ public class InboxFragment extends Fragment {
                     notificationList.clear();
 
                     if (documentSnapshot.exists()) {
+<<<<<<< HEAD
                         Object listObject = documentSnapshot.get("notificationList");
                         if (listObject instanceof List) {
                             List<?> rawList = (List<?>) listObject;
@@ -137,6 +138,21 @@ public class InboxFragment extends Fragment {
                                         asString(map.get("eventId"))
                                 ));
                                 notificationList.add(notification);
+=======
+                        // Retrieve the list named "notificationList" from the document
+                        List<Map<String, Object>> list = (List<Map<String, Object>>) documentSnapshot.get("notificationList");
+                        if (list != null) {
+                            notificationList.clear();
+                            for (Map<String, Object> map : list) {
+                                NotificationModel notif = new NotificationModel();
+                                notif.setSenderAccountID((String) map.get("senderAccountID"));
+                                notif.setReceiverAccountID((String) map.get("receiverAccountID"));
+                                notif.setMessage((String) map.get("message"));
+                                notif.setTimestamp((String) map.get("timestamp"));
+                                // Correctly extract the eventID to trigger the "View Event" button
+                                notif.setEventId((String) map.get("eventID"));
+                                notificationList.add(notif);
+>>>>>>> main
                             }
                         }
                     }

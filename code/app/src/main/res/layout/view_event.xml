@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
+    <!-- Top bar -->
     <LinearLayout
         android:id="@+id/linearLayout"
         android:layout_width="match_parent"
@@ -30,10 +33,9 @@
 
         <TextView
             android:id="@+id/event_heading"
-            android:layout_width="164dp"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:gravity="center_vertical"
             android:paddingStart="16dp"
             android:text="Event name"
             android:textColor="#000000"
@@ -41,6 +43,7 @@
             android:textStyle="bold" />
     </LinearLayout>
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
     <TextView
@@ -60,6 +63,9 @@
 
     <!-- Bottom nav -->
 >>>>>>> Stashed changes
+=======
+    <!-- Bottom nav -->
+>>>>>>> main
     <LinearLayout
         android:id="@+id/bot_nav"
         android:layout_width="match_parent"
@@ -110,24 +116,26 @@
             android:src="@drawable/ic_person" />
     </LinearLayout>
 
-    <!--Event details container -->
+    <!-- Scrollable event content -->
     <ScrollView
-        android:id="@+id/scroll_event_details"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:fillViewport="true"
 <<<<<<< Updated upstream
         app:layout_constraintTop_toBottomOf="@id/linearLayout"
+<<<<<<< HEAD
         app:layout_constraintBottom_toTopOf="@+id/buttons_container"
 =======
         app:layout_constraintTop_toBottomOf="@id/tvEventStatus"
         app:layout_constraintBottom_toTopOf="@id/bot_nav"
 >>>>>>> Stashed changes
+=======
+        app:layout_constraintBottom_toTopOf="@id/bot_nav"
+>>>>>>> main
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
-            android:id="@+id/event_details_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -136,20 +144,25 @@
             <ImageView
                 android:id="@+id/event_image"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="200dp"
+                android:scaleType="centerCrop"
                 tools:srcCompat="@tools:sample/avatars" />
 
             <TextView
                 android:id="@+id/cost_view"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:text="$65"
-                android:textAlignment="textStart"
-                android:textSize="25sp" />
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="8dp"
+                android:paddingBottom="4dp"
+                android:text="$0"
+                android:textSize="25sp"
+                android:textStyle="bold"
+                android:textColor="#000000" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/event_details"
                 android:layout_width="match_parent"
+<<<<<<< HEAD
 <<<<<<< Updated upstream
                 android:layout_height="wrap_content" />
 =======
@@ -165,6 +178,11 @@
                 android:textColor="#8A5570"
                 android:textSize="15sp" />
 
+=======
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+>>>>>>> main
             <ImageView
                 android:id="@+id/event_qr_code"
                 android:layout_width="120dp"
@@ -196,6 +214,7 @@
                 android:textColor="@android:color/white"
                 android:visibility="gone" />
 
+<<<<<<< HEAD
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -224,6 +243,8 @@
                     android:visibility="gone" />
             </LinearLayout>
 
+=======
+>>>>>>> main
             <Button
                 android:id="@+id/btnComments"
                 android:layout_width="match_parent"
@@ -232,43 +253,18 @@
                 android:text="VIEW COMMENTS"
                 android:backgroundTint="#888888"
                 android:textColor="@android:color/white" />
+<<<<<<< HEAD
 >>>>>>> Stashed changes
+=======
+>>>>>>> main
 
         </LinearLayout>
     </ScrollView>
-    <LinearLayout
-        android:id="@+id/buttons_container"
+
+    <FrameLayout
+        android:id="@+id/fragment_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp"
-        app:layout_constraintBottom_toTopOf="@+id/bot_nav"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <Button
-            android:id="@+id/waiting_list_btn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Join waiting list"
-            android:layout_marginBottom="8dp" />
-
-        <Button
-            android:id="@+id/back_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Go back"
-            android:layout_marginBottom="16dp" />
-
-        <ImageView
-            android:id="@+id/event_qr_code"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_gravity="center"
-            android:contentDescription="Event QR Code"
-            android:scaleType="centerInside"
-            android:background="#eeeeee"
-            android:visibility="gone"/>
-    </LinearLayout>
+        android:layout_height="match_parent"
+        android:elevation="10dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

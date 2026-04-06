@@ -136,6 +136,7 @@ public class AdminActivity extends AppCompatActivity {
     private void loadNotifications() {
         db.collection("notifications").get().addOnSuccessListener(snapshots -> {
             for (QueryDocumentSnapshot doc : snapshots) {
+<<<<<<< HEAD
                 if (doc.contains("receiverAccountID")) {
                     NotificationModel notification = doc.toObject(NotificationModel.class);
                     if (notification != null && notification.getMessage() != null) {
@@ -143,6 +144,8 @@ public class AdminActivity extends AppCompatActivity {
                     }
                 }
 
+=======
+>>>>>>> main
                 Object listObj = doc.get("notificationList");
                 if (listObj instanceof List) {
                     List<Map<String, Object>> list = (List<Map<String, Object>>) listObj;
@@ -273,4 +276,8 @@ public class AdminActivity extends AppCompatActivity {
             }
         }
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> main
