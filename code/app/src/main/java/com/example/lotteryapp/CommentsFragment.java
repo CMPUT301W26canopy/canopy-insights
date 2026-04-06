@@ -61,6 +61,11 @@ public class CommentsFragment extends Fragment {
     private Map<String, String> userUsernamesCache = new HashMap<>();
     private Map<String, String> userImagesCache = new HashMap<>();
 
+    /**
+     * Creates a new instance of CommentsFragment for a specific event.
+     * @param eventId The ID of the event to show comments for.
+     * @return A new instance of CommentsFragment.
+     */
     public static CommentsFragment newInstance(String eventId) {
         CommentsFragment fragment = new CommentsFragment();
         Bundle args = new Bundle();
@@ -82,6 +87,10 @@ public class CommentsFragment extends Fragment {
         checkUserPrivileges();
     }
 
+    /**
+     * Checks if the current user has special privileges (Admin or Organizer/Cohost)
+     * to manage comments in this event.
+     */
     private void checkUserPrivileges() {
         if (currentUserId == null) return;
 
@@ -148,11 +157,17 @@ public class CommentsFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Resets the reply state and hides the reply bar in the UI.
+     */
     private void cancelReply() {
         replyingToId = "0";
         if (replyBar != null) replyBar.setVisibility(View.GONE);
     }
 
+    /**
+     * Sets up a real-time listener to load comments for the current event from Firestore.
+     */
     private void loadComments() {
         if (eventId == null) return;
         
@@ -208,6 +223,8 @@ public class CommentsFragment extends Fragment {
     /**
      * Resolves poster names and profile images so the comment list can show
      * friendlier identity details than raw account IDs.
+     * @param userIds The set of user IDs to fetch profile data for.
+     * @param allComments The list of comments to refresh after data is fetched.
      */
     private void fetchUsernamesAndRefresh(Set<String> userIds, List<CommentModel> allComments) {
         if (userIds.isEmpty()) {
@@ -237,12 +254,21 @@ public class CommentsFragment extends Fragment {
         });
     }
 
+    /**
+     * Updates the main UI list with organized and threaded comments.
+     * @param allComments The raw list of comments to process.
+     */
     private void updateDisplayList(List<CommentModel> allComments) {
         commentsList.clear();
         commentsList.addAll(organizeComments(allComments));
         if (adapter != null) adapter.notifyDataSetChanged();
     }
 
+    /**
+     * Organizes a flat list of comments into a threaded structure sorted by timestamp.
+     * @param all The flat list of all event comments.
+     * @return A list ordered for threaded display.
+     */
     private List<CommentModel> organizeComments(List<CommentModel> all) {
         Collections.sort(all, (c1, c2) -> c1.getTimestamp().compareTo(c2.getTimestamp()));
 
@@ -268,6 +294,13 @@ public class CommentsFragment extends Fragment {
         return result;
     }
 
+    /**
+     * Recursively adds a comment and its nested replies to the display list.
+     * @param current The current comment being processed.
+     * @param result The result list being populated.
+     * @param childrenMap A mapping of parent IDs to their child comments.
+     * @param depth The current threading depth for indentation.
+     */
     private void addCommentAndReplies(CommentModel current, List<CommentModel> result, Map<String, List<CommentModel>> childrenMap, int depth) {
         current.setDepth(depth);
         result.add(current);
@@ -279,6 +312,10 @@ public class CommentsFragment extends Fragment {
         }
     }
 
+    /**
+     * Posts a new comment or reply to Firestore for the current event.
+     * @param text The message body of the comment.
+     */
     private void sendComment(String text) {
         if (eventId == null || currentUserId == null) return;
         
@@ -312,6 +349,8 @@ public class CommentsFragment extends Fragment {
 
     /**
      * Soft-removes a comment by adding it to the event's removed list.
+     * Removed comments are hidden or replaced with a placeholder in the UI.
+     * @param commentToDelete The comment model to be marked as removed.
      */
     private void deleteComment(CommentModel commentToDelete) {
         if (eventId == null) return;
@@ -330,6 +369,8 @@ public class CommentsFragment extends Fragment {
 
     /**
      * Toggles the current user's like on a single comment inside the stored list.
+     * Uses a Firestore transaction to safely update the likedBy array.
+     * @param comment The comment model to toggle the like for.
      */
     private void toggleLike(CommentModel comment) {
         if (eventId == null || currentUserId == null) return;
@@ -363,6 +404,10 @@ public class CommentsFragment extends Fragment {
         });
     }
 
+    /**
+     * Adapter for the comments RecyclerView, handling different states for removed
+     * comments and providing depth-based indentation for threads.
+     */
     private class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.ViewHolder> {
         private List<CommentModel> data;
         CommentsAdapter(List<CommentModel> data) { this.data = data; }
@@ -454,6 +499,12 @@ public class CommentsFragment extends Fragment {
         }
     }
 
+    /**
+     * Decodes a base64 string into a bitmap and binds it to an ImageView.
+     * Falls back to a default icon if decoding fails or the image is empty.
+     * @param imageView The target view to show the image.
+     * @param profileImage The base64 encoded profile image string.
+     */
     private void bindProfileImage(ImageView imageView, String profileImage) {
         if (imageView == null) {
             return;
@@ -472,6 +523,11 @@ public class CommentsFragment extends Fragment {
         imageView.setImageResource(R.drawable.ic_person);
     }
 
+    /**
+     * Helper to pick the first non-null and non-empty string from a list of candidates.
+     * @param values The candidate strings.
+     * @return The first valid string found, or null if none are valid.
+     */
     private String firstNonBlank(String... values) {
         if (values == null) {
             return null;

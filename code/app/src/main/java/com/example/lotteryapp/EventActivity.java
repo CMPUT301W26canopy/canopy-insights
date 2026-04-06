@@ -223,6 +223,11 @@ public class EventActivity extends AppCompatActivity {
                         Toast.makeText(this, "Error loading event", Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * Maps a Firestore document to an EventModel.
+     * @param documentSnapshot The Firestore document to map.
+     * @return An EventModel populated with document data, or null if mapping fails.
+     */
     private EventModel mapEvent(DocumentSnapshot documentSnapshot) {
         if (documentSnapshot == null || !documentSnapshot.exists()) {
             return null;
@@ -265,6 +270,10 @@ public class EventActivity extends AppCompatActivity {
         return event;
     }
 
+    /**
+     * Decodes a base64 string into a bitmap and binds it to the event poster ImageView.
+     * @param posterValue The base64 encoded poster image string.
+     */
     private void bindPoster(String posterValue) {
         if (posterValue != null && !posterValue.trim().isEmpty()) {
             try {
@@ -280,6 +289,9 @@ public class EventActivity extends AppCompatActivity {
         eventImageView.setImageResource(R.mipmap.ic_launcher);
     }
 
+    /**
+     * Fetches the current user's application status for the event from Firestore.
+     */
     private void refreshApplicationState() {
         if (userId == null || eventId == null) {
             currentApplicationId = null;
@@ -353,6 +365,10 @@ public class EventActivity extends AppCompatActivity {
                         Toast.makeText(this, "Failed to verify event settings", Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * Checks if the current date is within the event's registration period.
+     * @return True if registration is currently open.
+     */
     private boolean isWithinRegistrationPeriod() {
         if ((registrationStartDate == null || registrationStartDate.trim().isEmpty()) &&
                 (registrationEndDate == null || registrationEndDate.trim().isEmpty())) {
@@ -387,6 +403,8 @@ public class EventActivity extends AppCompatActivity {
 
     /**
      * Enforces the optional waiting-list cap before a user is allowed to join.
+     * @param waitingListLimit The maximum allowed size of the waiting list.
+     * @param onAllowed Callback to execute if joining is allowed.
      */
     private void validateWaitingListCapacity(Long waitingListLimit, Runnable onAllowed) {
         if (waitingListLimit == null || waitingListLimit <= 0) {
@@ -409,6 +427,9 @@ public class EventActivity extends AppCompatActivity {
                         Toast.makeText(this, "Unable to verify waiting list capacity", Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * Attempts to retrieve the user's location and join the waiting list.
+     */
     private void tryGetLocationAndJoin() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                 || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -418,6 +439,10 @@ public class EventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Verifies that the user is in an allowed location before permitting them to join the waiting list.
+     * @param allowedLocations The list of allowed location labels.
+     */
     private void checkLocationAndJoin(List<String> allowedLocations) {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -440,6 +465,10 @@ public class EventActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Performs the final Firestore join action by adding an application document.
+     * @param location The entrant's location for geolocation verification.
+     */
     private void performJoin(Location location) {
         Map<String, Object> application = new HashMap<>();
         application.put("eventId", eventId);
@@ -482,6 +511,9 @@ public class EventActivity extends AppCompatActivity {
                         Toast.makeText(this, "Failed to join", Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * Handles the logic for leaving the event's waiting list.
+     */
     private void leaveWaitingList() {
         if (!EventFlowRules.canLeave(currentApplicationStatus) || currentApplicationId == null) {
             refreshApplicationState();
@@ -513,6 +545,11 @@ public class EventActivity extends AppCompatActivity {
                         Toast.makeText(this, "Failed to leave", Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * Updates the status of the current user's application.
+     * @param newStatus The new status to set.
+     * @param successMessage The message to show on success.
+     */
     private void updateApplicationStatus(String newStatus, String successMessage) {
         if (currentApplicationId == null || currentApplicationId.trim().isEmpty()) {
             refreshApplicationState();
@@ -607,6 +644,10 @@ public class EventActivity extends AppCompatActivity {
         btnDecline.setVisibility(EventFlowRules.canDecline(effectiveStatus) ? View.VISIBLE : View.GONE);
     }
 
+    /**
+     * Returns a human-readable helper message based on the user's role and status.
+     * @return The helper message string.
+     */
     private String getHelperMessage() {
         if (isInvitedHost) {
             return "You are a co-host for this event.";
@@ -641,6 +682,11 @@ public class EventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Determines the current effective status for the user, accounting for both
+     * application documents and private invites.
+     * @return The effective status string.
+     */
     private String getEffectiveStatus() {
         String normalized = EventFlowRules.normalizeStatus(currentApplicationStatus);
         if (!normalized.isEmpty()) {
@@ -657,6 +703,8 @@ public class EventActivity extends AppCompatActivity {
 
     /**
      * Gives entrants a short explanation of how the lottery is meant to work.
+     * @param event The event model for which to generate guidelines.
+     * @return The lottery guidelines explanation string.
      */
     private String buildLotteryGuidelines(EventModel event) {
         int spots = event != null ? event.getTotalSpots() : 0;
@@ -670,6 +718,9 @@ public class EventActivity extends AppCompatActivity {
                 + capText;
     }
 
+    /**
+     * Opens the comments fragment for the current event.
+     */
     private void openComments() {
         CommentsFragment fragment = CommentsFragment.newInstance(eventId);
         getSupportFragmentManager().beginTransaction()
@@ -678,6 +729,9 @@ public class EventActivity extends AppCompatActivity {
                 .commit();
     }
 
+    /**
+     * Loads the current waiting count for the event and updates the UI list.
+     */
     private void loadCurrentWaitingCount() {
         FirestoreHelper.getDb().collection("applications")
                 .whereEqualTo("eventId", eventId)
@@ -694,6 +748,11 @@ public class EventActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Converts a location object to a human-readable address string using Geocoder.
+     * @param location The location to convert.
+     * @return A city, province or street address string.
+     */
     private String getAddressString(Location location) {
         Geocoder geocoder = new Geocoder(this, Locale.getDefault());
         try {
@@ -713,6 +772,12 @@ public class EventActivity extends AppCompatActivity {
         return "Unknown";
     }
 
+    /**
+     * Checks if the provided location is within the allowed list of cities/provinces.
+     * @param location The current location.
+     * @param allowedLocations The list of allowed location strings.
+     * @return True if the location matches any of the allowed entries.
+     */
     private boolean isLocationInAllowedList(Location location, List<String> allowedLocations) {
         if (allowedLocations == null || allowedLocations.isEmpty()) return true;
 
@@ -752,6 +817,9 @@ public class EventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Wires up the shared bottom navigation bar actions.
+     */
     private void setupBottomNav() {
         findViewById(R.id.navHome).setOnClickListener(v -> finish());
         findViewById(R.id.navCreate).setOnClickListener(v ->
@@ -770,6 +838,12 @@ public class EventActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Helper to provide a fallback string if a value is null or empty.
+     * @param value The candidate value.
+     * @param fallback The string to return if the candidate is invalid.
+     * @return The resulting string.
+     */
     private String safe(String value, String fallback) {
         if (value == null || value.trim().isEmpty()) {
             return fallback;
@@ -777,6 +851,12 @@ public class EventActivity extends AppCompatActivity {
         return value;
     }
 
+    /**
+     * Helper to pick the first non-blank string from two options.
+     * @param first The first choice.
+     * @param second The second choice.
+     * @return The non-blank string, or null if neither are valid.
+     */
     private String firstNonBlank(String first, String second) {
         if (first != null && !first.trim().isEmpty()) {
             return first;
@@ -787,6 +867,9 @@ public class EventActivity extends AppCompatActivity {
         return null;
     }
 
+    /**
+     * Simple RecyclerView adapter for displaying text-based event details.
+     */
     private static class SimpleTextAdapter extends RecyclerView.Adapter<SimpleTextAdapter.ViewHolder> {
         private final List<String> data;
 

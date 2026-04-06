@@ -14,6 +14,8 @@ public final class EventFlowRules {
 
     /**
      * Returns a normalized lower-case status value for comparisons.
+     * @param status The raw status string.
+     * @return The normalized, lowercase status string.
      */
     public static String normalizeStatus(String status) {
         return status == null ? "" : status.trim().toLowerCase(Locale.getDefault());
@@ -21,6 +23,9 @@ public final class EventFlowRules {
 
     /**
      * Returns true when the current user can join the event waiting list.
+     * @param status The current application status.
+     * @param isInvitedHost Whether the user is a co-host.
+     * @return True if the user is not a co-host and has no current application.
      */
     public static boolean canJoin(String status, boolean isInvitedHost) {
         return !isInvitedHost && normalizeStatus(status).isEmpty();
@@ -28,6 +33,8 @@ public final class EventFlowRules {
 
     /**
      * Returns true when the current user can leave the waiting list.
+     * @param status The current application status.
+     * @return True if the status is "waiting".
      */
     public static boolean canLeave(String status) {
         return "waiting".equals(normalizeStatus(status));
@@ -35,6 +42,8 @@ public final class EventFlowRules {
 
     /**
      * Returns true when the current user can accept the current offer.
+     * @param status The current application status.
+     * @return True if the status is "selected" or "invited".
      */
     public static boolean canAccept(String status) {
         String normalized = normalizeStatus(status);
@@ -43,6 +52,8 @@ public final class EventFlowRules {
 
     /**
      * Returns true when the current user can decline the current offer.
+     * @param status The current application status.
+     * @return True if the status is "selected" or "invited".
      */
     public static boolean canDecline(String status) {
         String normalized = normalizeStatus(status);
@@ -51,6 +62,8 @@ public final class EventFlowRules {
 
     /**
      * Returns true once any application has moved past the initial waiting state.
+     * @param statuses A list of status strings for all event applications.
+     * @return True if at least one status is not "waiting" or empty.
      */
     public static boolean hasLotteryStarted(List<String> statuses) {
         if (statuses == null) {
@@ -68,6 +81,8 @@ public final class EventFlowRules {
 
     /**
      * Returns true when there are selected entrants who still need to respond.
+     * @param statuses A list of status strings for all event applications.
+     * @return True if at least one application has a "selected" status.
      */
     public static boolean hasPendingSelected(List<String> statuses) {
         if (statuses == null) {
@@ -84,6 +99,8 @@ public final class EventFlowRules {
 
     /**
      * Counts the spots currently occupied by selected or accepted entrants.
+     * @param statuses A list of status strings for all event applications.
+     * @return The total number of "selected" or "accepted" applications.
      */
     public static int countOccupiedSpots(List<String> statuses) {
         if (statuses == null) {
@@ -102,6 +119,8 @@ public final class EventFlowRules {
 
     /**
      * Returns true when an application should be included in the final CSV export.
+     * @param status The current application status.
+     * @return True if the status is "accepted".
      */
     public static boolean shouldExportToCsv(String status) {
         return "accepted".equals(normalizeStatus(status));
@@ -109,6 +128,8 @@ public final class EventFlowRules {
 
     /**
      * Returns the history-friendly label for an application status.
+     * @param rawStatus The raw status string from Firestore.
+     * @return A human-readable label suitable for the history screen.
      */
     public static String getHistoryStatusLabel(String rawStatus) {
         String normalized = normalizeStatus(rawStatus);
@@ -141,6 +162,9 @@ public final class EventFlowRules {
 
     /**
      * Returns the event screen label for the current user's state.
+     * @param status The current application status.
+     * @param isInvitedHost Whether the user is a co-host.
+     * @return A formatted string showing the user's current relationship to the event.
      */
     public static String getEventStatusLabel(String status, boolean isInvitedHost) {
         if (isInvitedHost) {

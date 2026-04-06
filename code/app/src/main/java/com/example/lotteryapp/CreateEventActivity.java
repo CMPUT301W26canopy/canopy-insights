@@ -111,18 +111,38 @@ public class CreateEventActivity extends AppCompatActivity {
         btnUploadPoster.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
     }
 
+    /**
+     * Returns the list of specific locations (e.g. cities or neighborhoods)
+     * allowed for joining the event if geolocation verification is enabled.
+     * @return The list of added location labels.
+     */
     public ArrayList<String> getAddedLocations() {
         return addedLocations;
     }
 
+    /**
+     * Returns whether the event requires the entrant's location to be verified
+     * before joining the waiting list.
+     * @return True if verification is active.
+     */
     public boolean isGeolocationVerification() {
         return geolocationVerification;
     }
 
+    /**
+     * Sets whether the event requires geolocation verification for entrants.
+     * @param geolocationVerification The new verification status.
+     */
     public void setGeolocationVerification(boolean geolocationVerification) {
         this.geolocationVerification = geolocationVerification;
     }
 
+    /**
+     * Updates the event's registration window and waiting list capacity from a child fragment.
+     * @param startDate The first day entrants can apply.
+     * @param endDate The final day entrants can apply.
+     * @param waitlistLimit The maximum size of the waiting list, or null for no limit.
+     */
     public void setRegistrationPeriod(String startDate, String endDate, Integer waitlistLimit) {
         this.registrationStartDate = startDate;
         this.registrationEndDate = endDate;
@@ -135,6 +155,7 @@ public class CreateEventActivity extends AppCompatActivity {
 
     /**
      * Validates the form, builds the Firestore event payload, and saves it.
+     * Upon success, generates a QR code if the event is public and updates the UI state.
      */
     private void createEvent() {
         String name        = eventNameInput.getText().toString().trim();
@@ -271,6 +292,12 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Reads all bytes from an InputStream into a byte array.
+     * @param inputStream The source stream.
+     * @return The complete byte array.
+     * @throws IOException If a read error occurs.
+     */
     private byte[] readBytes(InputStream inputStream) throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         byte[] buffer = new byte[8192];
@@ -281,6 +308,13 @@ public class CreateEventActivity extends AppCompatActivity {
         return outputStream.toByteArray();
     }
 
+    /**
+     * Reads EXIF metadata to determine if an image was taken with a rotation and
+     * applies that rotation to the Bitmap.
+     * @param bitmap The raw decoded bitmap.
+     * @param imageBytes The raw bytes for EXIF extraction.
+     * @return The corrected bitmap.
+     */
     private Bitmap applyExifRotation(Bitmap bitmap, byte[] imageBytes) {
         try {
             ExifInterface exifInterface = new ExifInterface(new ByteArrayInputStream(imageBytes));
@@ -310,6 +344,12 @@ public class CreateEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Center-crops a bitmap to a specific target aspect ratio.
+     * @param bitmap The source image.
+     * @param targetRatio The desired width/height ratio.
+     * @return The cropped bitmap.
+     */
     private Bitmap cropToPortrait(Bitmap bitmap, float targetRatio) {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
@@ -335,6 +375,12 @@ public class CreateEventActivity extends AppCompatActivity {
         return Bitmap.createBitmap(bitmap, left, top, cropWidth, cropHeight);
     }
 
+    /**
+     * Scales a bitmap down so its longest side does not exceed a maximum dimension.
+     * @param bitmap The source image.
+     * @param maxDimension The maximum allowed size for width or height.
+     * @return The scaled bitmap, or the original if it was already small enough.
+     */
     private Bitmap scaleBitmap(Bitmap bitmap, int maxDimension) {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
@@ -349,6 +395,11 @@ public class CreateEventActivity extends AppCompatActivity {
         return Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true);
     }
 
+    /**
+     * Compresses a bitmap to JPEG and encodes it as a base64 string for Firestore storage.
+     * @param bitmap The image to encode.
+     * @return The base64 string.
+     */
     private String encodeBitmap(Bitmap bitmap) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream);
