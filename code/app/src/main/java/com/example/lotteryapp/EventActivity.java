@@ -32,7 +32,11 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.GeoPoint;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -53,6 +57,7 @@ public class EventActivity extends AppCompatActivity {
     private TextView statusHeading;
     private TextView helperMessageView;
     private TextView lotteryGuidelinesView;
+    private TextView tvEventDescription;
     private ImageView qrCodeView;
     private ImageView eventImageView;
     private Button btnJoin;
@@ -70,6 +75,9 @@ public class EventActivity extends AppCompatActivity {
     private boolean isPrivateEvent;
     private boolean isOrganizer;
     private FusedLocationProviderClient fusedLocationClient;
+
+    private String registrationStartDate;
+    private String registrationEndDate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,6 +97,7 @@ public class EventActivity extends AppCompatActivity {
         statusHeading = findViewById(R.id.tvEventStatus);
         helperMessageView = findViewById(R.id.tvEventHelperMessage);
         lotteryGuidelinesView = findViewById(R.id.tvLotteryGuidelines);
+        tvEventDescription = findViewById(R.id.tvEventDescription);
         qrCodeView = findViewById(R.id.event_qr_code);
         eventImageView = findViewById(R.id.event_image);
         btnJoin = findViewById(R.id.btnJoinWaitingList);
@@ -142,6 +151,10 @@ public class EventActivity extends AppCompatActivity {
                         return;
                     }
 
+                    registrationStartDate = event.getRegistrationStartDate();
+                    registrationEndDate = event.getRegistrationEndDate();
+                    String description = event.getDescription();
+
                     List<String> invitedHosts = (List<String>) documentSnapshot.get("invitedHosts");
                     List<String> invitedParticipants = (List<String>) documentSnapshot.get("invitedParticipants");
                     List<String> declinedParticipantInvites = (List<String>) documentSnapshot.get("declinedParticipantInvites");
@@ -158,15 +171,26 @@ public class EventActivity extends AppCompatActivity {
                     } else if (isInvitedParticipant && EventFlowRules.normalizeStatus(currentApplicationStatus).isEmpty()) {
                         eventDetailsList.add("YOU HAVE A PRIVATE WAITING LIST INVITE");
                     }
+                    
                     eventDetailsList.add("Total Spots: " + event.getTotalSpots());
                     eventDetailsList.add("Current Waiting List: " + event.getWaitingListCount());
                     if (event.getWaitingListLimit() > 0) {
                         eventDetailsList.add("Waiting List Limit: " + event.getWaitingListLimit());
                     }
+                    
+                    // Display registration info if present
+                    if (registrationStartDate != null && !registrationStartDate.trim().isEmpty()) {
+                        eventDetailsList.add("Registration Opens: " + registrationStartDate);
+                    }
+                    if (registrationEndDate != null && !registrationEndDate.trim().isEmpty()) {
+                        eventDetailsList.add("Registration Closes: " + registrationEndDate);
+                    }
+
                     eventDetailsList.add(String.format(Locale.getDefault(), "Price: $%d", (int) event.getPrice()));
                     eventDetailsList.add("Age Group: " + safe(event.getAgeGroup(), "All Age Groups"));
                     eventDetailsList.add("Location: " + safe(event.getLocation(), "Location TBA"));
                     eventDetailsList.add("Date: " + safe(event.getDate(), "Date TBA"));
+
                     adapter.notifyDataSetChanged();
 
                     costHeading.setText(String.format(Locale.getDefault(), "$%d", (int) event.getPrice()));
@@ -174,6 +198,14 @@ public class EventActivity extends AppCompatActivity {
                     bindPoster(event.getPosterImage());
                     if (lotteryGuidelinesView != null) {
                         lotteryGuidelinesView.setText(buildLotteryGuidelines(event));
+                    }
+                    if (tvEventDescription != null) {
+                        if (description != null && !description.isEmpty()) {
+                            tvEventDescription.setText(description);
+                            tvEventDescription.setVisibility(View.VISIBLE);
+                        } else {
+                            tvEventDescription.setVisibility(View.GONE);
+                        }
                     }
 
                     Bitmap qr = QRCodeHelper.generateQRCode(eventId);
@@ -196,38 +228,40 @@ public class EventActivity extends AppCompatActivity {
             return null;
         }
 
+        EventModel event;
         try {
-            EventModel mapped = documentSnapshot.toObject(EventModel.class);
-            if (mapped != null) {
-                return mapped;
+            event = documentSnapshot.toObject(EventModel.class);
+            if (event == null) {
+                event = new EventModel();
             }
         } catch (Exception ignored) {
+            event = new EventModel();
         }
 
-        EventModel event = new EventModel();
-        event.setWaitingList(new ArrayList<>());
+        // Explicitly set fields to ensure they aren't lost if toObject fails or document schema is mixed
         event.setName(documentSnapshot.getString("name"));
         event.setDate(documentSnapshot.getString("date"));
         event.setLocation(documentSnapshot.getString("location"));
         event.setAgeGroup(documentSnapshot.getString("ageGroup"));
+        event.setDescription(documentSnapshot.getString("description"));
         event.setPosterImage(firstNonBlank(documentSnapshot.getString("posterImage"), documentSnapshot.getString("poster")));
-
+        
         Double price = documentSnapshot.getDouble("price");
-        Long priceLong = documentSnapshot.getLong("price");
-        if (price != null) {
-            event.setPrice(price);
-        } else if (priceLong != null) {
-            event.setPrice(priceLong.doubleValue());
+        if (price != null) event.setPrice(price);
+        
+        Long spots = documentSnapshot.getLong("totalSpots");
+        if (spots != null) event.setTotalSpots(spots.intValue());
+        
+        Long waitingListLimit = documentSnapshot.getLong("waitingListLimit");
+        if (waitingListLimit != null) event.setWaitingListLimit(waitingListLimit.intValue());
+
+        event.setRegistrationStartDate(documentSnapshot.getString("registrationStartDate"));
+        event.setRegistrationEndDate(documentSnapshot.getString("registrationEndDate"));
+
+        if (event.getWaitingList() == null) {
+            event.setWaitingList(new ArrayList<>());
         }
 
-        Long spots = documentSnapshot.getLong("totalSpots");
-        if (spots != null) {
-            event.setTotalSpots(spots.intValue());
-        }
-        Long waitingListLimit = documentSnapshot.getLong("waitingListLimit");
-        if (waitingListLimit != null) {
-            event.setWaitingListLimit(waitingListLimit.intValue());
-        }
         return event;
     }
 
@@ -297,6 +331,11 @@ public class EventActivity extends AppCompatActivity {
             return;
         }
 
+        if (!isWithinRegistrationPeriod()) {
+            Toast.makeText(this, "Registration is not currently open.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         FirestoreHelper.getDb().collection("events").document(eventId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     Long waitingListLimit = documentSnapshot.getLong("waitingListLimit");
@@ -312,6 +351,38 @@ public class EventActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to verify event settings", Toast.LENGTH_SHORT).show());
+    }
+
+    private boolean isWithinRegistrationPeriod() {
+        if ((registrationStartDate == null || registrationStartDate.trim().isEmpty()) &&
+                (registrationEndDate == null || registrationEndDate.trim().isEmpty())) {
+            return true;
+        }
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        Date now = Calendar.getInstance().getTime();
+
+        try {
+            if (registrationStartDate != null && !registrationStartDate.trim().isEmpty()) {
+                Date start = sdf.parse(registrationStartDate);
+                if (now.before(start)) return false;
+            }
+            if (registrationEndDate != null && !registrationEndDate.trim().isEmpty()) {
+                Date end = sdf.parse(registrationEndDate);
+                // Make end date inclusive by setting time to end of day
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(end);
+                cal.set(Calendar.HOUR_OF_DAY, 23);
+                cal.set(Calendar.MINUTE, 59);
+                cal.set(Calendar.SECOND, 59);
+                if (now.after(cal.getTime())) return false;
+            }
+        } catch (ParseException e) {
+            // If date format is wrong, we'll allow joining but log it
+            e.printStackTrace();
+        }
+
+        return true;
     }
 
     /**
@@ -563,6 +634,9 @@ public class EventActivity extends AppCompatActivity {
                 if (isPrivateEvent) {
                     return "This is a private event. An invitation is required to join.";
                 }
+                if (!isWithinRegistrationPeriod()) {
+                    return "Registration is not currently open.";
+                }
                 return "Join the waiting list to participate.";
         }
     }
@@ -684,8 +758,16 @@ public class EventActivity extends AppCompatActivity {
                 startActivity(new Intent(this, OrganizerActivity.class)));
         findViewById(R.id.navHistory).setOnClickListener(v ->
                 NavigationHelper.openHistory(this));
-        findViewById(R.id.navProfile).setOnClickListener(v ->
-                startActivity(new Intent(this, LoginActivity.class)));
+        findViewById(R.id.navProfile).setOnClickListener(v -> {
+            DeviceData deviceData = DeviceData.getInstance(this);
+            if (deviceData.isLoggedIn()) {
+                Intent intent = new Intent(this, ProfileActivity.class);
+                intent.putExtra("accountID", deviceData.getAccountID());
+                startActivity(intent);
+            } else {
+                startActivity(new Intent(this, LoginActivity.class));
+            }
+        });
     }
 
     private String safe(String value, String fallback) {
