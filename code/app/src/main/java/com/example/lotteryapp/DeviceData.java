@@ -2,6 +2,9 @@ package com.example.lotteryapp;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.provider.Settings;
+
+import java.util.UUID;
 
 /**
  * Manages user session using SharedPreferences with a Singleton pattern.
@@ -15,6 +18,7 @@ public class DeviceData {
     private static final String KEY_ACCOUNT_ID = "accountID";
     private static final String KEY_USERNAME = "username";
     private static final String KEY_IS_LOGGED_IN = "isLoggedIn";
+    private static final String KEY_DEVICE_ID = "deviceId";
 
     private static DeviceData instance;
     private final SharedPreferences pref;
@@ -79,10 +83,36 @@ public class DeviceData {
     }
 
     /**
+     * Returns a stable device identifier for device-based entrant login.
+     * Falls back to a persisted random UUID if Android ID is unavailable.
+     */
+    public String getOrCreateDeviceId(Context context) {
+        String existing = pref.getString(KEY_DEVICE_ID, null);
+        if (existing != null && !existing.trim().isEmpty()) {
+            return existing;
+        }
+
+        String androidId = Settings.Secure.getString(
+                context.getContentResolver(),
+                Settings.Secure.ANDROID_ID
+        );
+
+        String resolvedId = (androidId != null && !androidId.trim().isEmpty())
+                ? androidId.trim()
+                : UUID.randomUUID().toString();
+
+        editor.putString(KEY_DEVICE_ID, resolvedId);
+        editor.apply();
+        return resolvedId;
+    }
+
+    /**
      * Clears the session data and logs the user out.
      */
     public void logoutUser() {
-        editor.clear();
+        editor.remove(KEY_IS_LOGGED_IN);
+        editor.remove(KEY_ACCOUNT_ID);
+        editor.remove(KEY_USERNAME);
         editor.apply();
     }
 }

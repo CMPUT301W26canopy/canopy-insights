@@ -13,6 +13,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Handles writing notifications to Firestore using one shared app schema.
+ */
 public class NotificationHelper {
 
     private NotificationHelper() {}

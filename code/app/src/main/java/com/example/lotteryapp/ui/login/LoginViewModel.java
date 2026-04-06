@@ -11,6 +11,9 @@ import com.example.lotteryapp.data.Result;
 import com.example.lotteryapp.data.model.LoggedInUser;
 import com.example.lotteryapp.R;
 
+/**
+ * Validates login form input and forwards sign-in requests to the repository.
+ */
 public class LoginViewModel extends ViewModel {
 
     private MutableLiveData<LoginFormState> loginFormState = new MutableLiveData<>();

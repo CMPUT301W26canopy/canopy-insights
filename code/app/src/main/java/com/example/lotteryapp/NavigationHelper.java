@@ -5,6 +5,9 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+/**
+ * Small helper for keeping bottom navigation behavior consistent across screens.
+ */
 public final class NavigationHelper {
 
     private NavigationHelper() {}

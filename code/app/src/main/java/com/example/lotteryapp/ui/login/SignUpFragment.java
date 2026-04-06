@@ -36,6 +36,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Locale;
 
+/**
+ * Handles account creation and the first-time profile setup flow.
+ */
 public class SignUpFragment extends Fragment {
 
     private LoginViewModel loginViewModel;

@@ -22,14 +22,18 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
- * A pop-up fragment for inviting participants to an event.
+ * Bottom sheet used by organizers to search accounts and invite them either
+ * as private-event participants or as co-organizers.
  */
 public class InviteFragment extends BottomSheetDialogFragment {
 
@@ -114,6 +118,9 @@ public class InviteFragment extends BottomSheetDialogFragment {
         view.findViewById(R.id.btn_confirm_invite).setOnClickListener(v -> sendInvites());
     }
 
+    /**
+     * Searches accounts by the common profile fields shown in the story.
+     */
     private void performSearch(String query) {
         Task<QuerySnapshot> nameQuery = db.collection("accounts")
                 .orderBy("name")
@@ -158,6 +165,10 @@ public class InviteFragment extends BottomSheetDialogFragment {
         });
     }
 
+    /**
+     * Persists the chosen invite type on the event and sends the matching
+     * in-app notifications.
+     */
     private void sendInvites() {
         Set<String> selectedIds = searchAdapter.getSelectedProfileIds();
         if (selectedIds.isEmpty()) {
@@ -177,12 +188,15 @@ public class InviteFragment extends BottomSheetDialogFragment {
         String role = hostOrParticipantBtn != null
                 ? hostOrParticipantBtn.getText().toString()
                 : "Participant";
-        String message = "Invitation: You have been invited as a " + role + " to join an event!";
+        String message = role.equalsIgnoreCase("Co-host")
+                ? "Invitation: You have been assigned as a co-organizer for this event."
+                : "Invitation: You have been invited to join the waiting list for this event.";
 
         Task<Void> eventUpdateTask = Tasks.forResult(null);
         if (role.equalsIgnoreCase("Co-host") && eventId != null) {
-            eventUpdateTask = db.collection("events").document(eventId)
-                    .update("invitedHosts", FieldValue.arrayUnion(selectedIds.toArray()));
+            eventUpdateTask = assignCoHosts(selectedIds);
+        } else if (eventId != null) {
+            eventUpdateTask = assignParticipantInvites(selectedIds);
         }
 
         eventUpdateTask
@@ -213,5 +227,63 @@ public class InviteFragment extends BottomSheetDialogFragment {
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+
+    /**
+     * Marks users as invited participants for a private event so they can
+     * accept or decline that invite from the event screen.
+     */
+    private Task<Void> assignParticipantInvites(Set<String> selectedIds) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("invitedParticipants", FieldValue.arrayUnion(selectedIds.toArray()));
+        updates.put("declinedParticipantInvites", FieldValue.arrayRemove(selectedIds.toArray()));
+        return db.collection("events").document(eventId).update(updates);
+    }
+
+    /**
+     * Assigns users as co-hosts and removes them from the entrant pool for the
+     * same event if they were already waiting.
+     */
+    private Task<Void> assignCoHosts(Set<String> selectedIds) {
+        Map<String, Object> eventUpdates = new HashMap<>();
+        eventUpdates.put("invitedHosts", FieldValue.arrayUnion(selectedIds.toArray()));
+        eventUpdates.put("invitedParticipants", FieldValue.arrayRemove(selectedIds.toArray()));
+        eventUpdates.put("declinedParticipantInvites", FieldValue.arrayRemove(selectedIds.toArray()));
+        eventUpdates.put("waitingList", FieldValue.arrayRemove(selectedIds.toArray()));
+
+        Task<Void> updateEventTask = db.collection("events").document(eventId).update(eventUpdates);
+        Task<Void> removeApplicationsTask = db.collection("applications")
+                .whereEqualTo("eventId", eventId)
+                .get()
+                .continueWithTask(task -> {
+                    if (!task.isSuccessful()) {
+                        Exception exception = task.getException();
+                        return Tasks.forException(exception != null
+                                ? exception
+                                : new IllegalStateException("Failed to load event applications"));
+                    }
+
+                    QuerySnapshot snapshot = task.getResult();
+                    if (snapshot == null || snapshot.isEmpty()) {
+                        return Tasks.forResult(null);
+                    }
+
+                    WriteBatch batch = db.batch();
+                    boolean hasDeletes = false;
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        String userId = doc.getString("userId");
+                        if (userId != null && selectedIds.contains(userId)) {
+                            batch.delete(doc.getReference());
+                            hasDeletes = true;
+                        }
+                    }
+
+                    if (!hasDeletes) {
+                        return Tasks.forResult(null);
+                    }
+                    return batch.commit();
+                });
+
+        return Tasks.whenAll(updateEventTask, removeApplicationsTask);
     }
 }

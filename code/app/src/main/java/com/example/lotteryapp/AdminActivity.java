@@ -1,10 +1,12 @@
 package com.example.lotteryapp;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -22,6 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Hosts the admin tools for managing events, profiles, images, and notifications.
+ */
 public class AdminActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
@@ -30,6 +35,7 @@ public class AdminActivity extends AppCompatActivity {
     private String currentTab = "Events";
     private FirebaseFirestore db;
     private DeviceData deviceData;
+    private Button btnSendAdminNotification;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +55,8 @@ public class AdminActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+        btnSendAdminNotification = findViewById(R.id.btnSendAdminNotification);
+        btnSendAdminNotification.setOnClickListener(v -> showSendNotificationDialog());
 
         recyclerView = findViewById(R.id.adminRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -80,6 +88,7 @@ public class AdminActivity extends AppCompatActivity {
     private void loadData() {
         itemList.clear();
         adapter.notifyDataSetChanged();
+        updateTabActions();
 
         if (currentTab.equalsIgnoreCase("Images")) {
             loadImages();
@@ -120,12 +129,90 @@ public class AdminActivity extends AppCompatActivity {
         }
     }
 
+    private void updateTabActions() {
+        if (btnSendAdminNotification != null) {
+            btnSendAdminNotification.setVisibility(
+                    currentTab.equalsIgnoreCase("Notifications") ? View.VISIBLE : View.GONE
+            );
+        }
+    }
+
+    private void showSendNotificationDialog() {
+        if (!currentTab.equalsIgnoreCase("Notifications")) {
+            return;
+        }
+
+        EditText input = new EditText(this);
+        input.setHint("Write a short admin update");
+        input.setMinLines(3);
+        input.setPadding(40, 32, 40, 32);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Send Admin Notification")
+                .setView(input)
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Send", (dialog, which) -> {
+                    String message = input.getText().toString().trim();
+                    if (message.isEmpty()) {
+                        Toast.makeText(this, "Notification message cannot be empty", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    sendAdminNotification(message);
+                })
+                .show();
+    }
+
+    private void sendAdminNotification(String message) {
+        String senderId = deviceData.getAccountID() != null ? deviceData.getAccountID() : "ADMIN";
+        db.collection("accounts").get().addOnSuccessListener(queryDocumentSnapshots -> {
+            List<String> receiverIds = new ArrayList<>();
+            for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                String receiverId = doc.getId();
+                String username = doc.getString("username");
+                if (receiverId == null || receiverId.equals(senderId)) {
+                    continue;
+                }
+                if (isAdminUsername(username)) {
+                    continue;
+                }
+                receiverIds.add(receiverId);
+            }
+
+            if (receiverIds.isEmpty()) {
+                Toast.makeText(this, "No entrant accounts found to notify", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            NotificationHelper.sendNotifications(
+                            senderId,
+                            receiverIds,
+                            "Admin update: " + message,
+                            null
+                    )
+                    .addOnSuccessListener(unused -> {
+                        Toast.makeText(this, "Admin notification sent", Toast.LENGTH_SHORT).show();
+                        loadData();
+                    })
+                    .addOnFailureListener(e ->
+                            Toast.makeText(this, "Failed to send notification", Toast.LENGTH_SHORT).show());
+        }).addOnFailureListener(e ->
+                Toast.makeText(this, "Failed to load recipients", Toast.LENGTH_SHORT).show());
+    }
+
+    private boolean isAdminUsername(String username) {
+        if (username == null) {
+            return false;
+        }
+        return username.equalsIgnoreCase("Heeya") || username.equalsIgnoreCase("fasih");
+    }
+
     private void loadImages() {
         db.collection("events").get().addOnSuccessListener(snapshots -> {
             for (QueryDocumentSnapshot doc : snapshots) {
                 String eventId = doc.getId();
                 String eventName = doc.getString("name");
-                if (doc.contains("poster") && doc.get("poster") != null) {
+                Object posterValue = doc.contains("posterImage") ? doc.get("posterImage") : doc.get("poster");
+                if (posterValue != null) {
                     itemList.add(new ImageItem(eventId, eventName != null ? eventName : "Unnamed Event"));
                 }
             }
@@ -200,7 +287,7 @@ public class AdminActivity extends AppCompatActivity {
                     });
         } else if (item instanceof ImageItem) {
             db.collection("events").document(((ImageItem) item).eventId)
-                    .update("poster", null).addOnSuccessListener(v -> {
+                    .update("poster", null, "posterImage", null).addOnSuccessListener(v -> {
                         Toast.makeText(this, "Image removed", Toast.LENGTH_SHORT).show();
                         loadData();
                     });

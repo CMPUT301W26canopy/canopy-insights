@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Displays the current user's application history across events.
+ */
 public class HistoryActivity extends AppCompatActivity {
 
     private final List<HistoryAdapter.HistoryItem> historyItems = new ArrayList<>();

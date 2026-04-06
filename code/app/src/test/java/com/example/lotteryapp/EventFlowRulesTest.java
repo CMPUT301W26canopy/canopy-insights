@@ -27,6 +27,15 @@ public class EventFlowRulesTest {
     }
 
     @Test
+    public void privateInvite_canAcceptAndDecline() {
+        assertTrue(EventFlowRules.canAccept("invited"));
+        assertTrue(EventFlowRules.canDecline("invited"));
+        assertEquals("INVITED", EventFlowRules.getHistoryStatusLabel("invited"));
+        assertEquals("Status : PRIVATE INVITE", EventFlowRules.getEventStatusLabel("invited", false));
+        assertEquals("Status : INVITE DECLINED", EventFlowRules.getEventStatusLabel("invite_declined", false));
+    }
+
+    @Test
     public void openEntrant_canJoinWhenNotInvitedHost() {
         assertTrue(EventFlowRules.canJoin("", false));
         assertTrue(EventFlowRules.canJoin(null, false));

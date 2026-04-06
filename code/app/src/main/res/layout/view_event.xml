@@ -29,7 +29,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Back"
             android:src="@drawable/ic_arrow_back"
-            app:tint="#888888" />
+            app:tint="#4A4458" />
 
         <TextView
             android:id="@+id/event_heading"
@@ -113,7 +113,8 @@
             <ImageView
                 android:id="@+id/event_image"
                 android:layout_width="match_parent"
-                android:layout_height="200dp"
+                android:layout_height="260dp"
+                android:background="#F1ECFA"
                 android:scaleType="centerCrop"
                 tools:srcCompat="@tools:sample/avatars" />
 
@@ -145,8 +146,18 @@
                 android:paddingTop="4dp"
                 android:paddingBottom="8dp"
                 android:text="Join the waiting list to participate."
-                android:textColor="#666666"
+                android:textColor="#6E647E"
                 android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvLotteryGuidelines"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="12dp"
+                android:textColor="#4A4458"
+                android:textSize="13sp"
+                android:textStyle="italic"
+                tools:text="Lottery guideline: entrants on the waiting list are drawn at random when the organizer runs the lottery." />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/event_details"
@@ -162,7 +173,7 @@
                 android:layout_marginTop="12dp"
                 android:contentDescription="Event QR Code"
                 android:scaleType="centerInside"
-                android:background="#eeeeee"
+                android:background="#F1ECFA"
                 android:visibility="gone" />
 
             <Button
@@ -211,7 +222,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="VIEW COMMENTS"
-                android:backgroundTint="#888888"
+                android:backgroundTint="#4A4458"
                 android:textColor="@android:color/white" />
 
         </LinearLayout>

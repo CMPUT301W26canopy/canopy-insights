@@ -13,6 +13,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.IOException;
 
+/**
+ * Scans QR codes and routes the user to the matching event details.
+ */
 public class QRScannerActivity extends AppCompatActivity {
 
     // New Activity Result launcher

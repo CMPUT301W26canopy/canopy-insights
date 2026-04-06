@@ -15,6 +15,9 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Displays a map centered on the selected event or join location.
+ */
 public class MapActivity extends AppCompatActivity {
 
     private WebView mapWebView;

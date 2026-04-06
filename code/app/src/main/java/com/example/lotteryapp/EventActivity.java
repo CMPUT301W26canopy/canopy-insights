@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.GeoPoint;
 
 import java.io.IOException;
@@ -37,6 +38,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Shows the entrant-facing event detail screen and drives the join, invite,
+ * accept/decline, and comments flows around a single event.
+ */
 public class EventActivity extends AppCompatActivity {
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
@@ -47,6 +52,7 @@ public class EventActivity extends AppCompatActivity {
     private TextView eventHeading;
     private TextView statusHeading;
     private TextView helperMessageView;
+    private TextView lotteryGuidelinesView;
     private ImageView qrCodeView;
     private ImageView eventImageView;
     private Button btnJoin;
@@ -59,6 +65,10 @@ public class EventActivity extends AppCompatActivity {
     private String currentApplicationId;
     private String currentApplicationStatus = "";
     private boolean isInvitedHost;
+    private boolean isInvitedParticipant;
+    private boolean hasDeclinedParticipantInvite;
+    private boolean isPrivateEvent;
+    private boolean isOrganizer;
     private FusedLocationProviderClient fusedLocationClient;
 
     @Override
@@ -78,6 +88,7 @@ public class EventActivity extends AppCompatActivity {
         eventHeading = findViewById(R.id.event_heading);
         statusHeading = findViewById(R.id.tvEventStatus);
         helperMessageView = findViewById(R.id.tvEventHelperMessage);
+        lotteryGuidelinesView = findViewById(R.id.tvLotteryGuidelines);
         qrCodeView = findViewById(R.id.event_qr_code);
         eventImageView = findViewById(R.id.event_image);
         btnJoin = findViewById(R.id.btnJoinWaitingList);
@@ -100,8 +111,8 @@ public class EventActivity extends AppCompatActivity {
 
         btnJoin.setOnClickListener(v -> joinWaitingList());
         btnLeave.setOnClickListener(v -> leaveWaitingList());
-        btnAccept.setOnClickListener(v -> updateApplicationStatus("accepted", "Invitation accepted"));
-        btnDecline.setOnClickListener(v -> updateApplicationStatus("declined", "Invitation declined"));
+        btnAccept.setOnClickListener(v -> handleAcceptAction());
+        btnDecline.setOnClickListener(v -> handleDeclineAction());
         btnComments.setOnClickListener(v -> openComments());
 
         setupBottomNav();
@@ -112,9 +123,14 @@ public class EventActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        loadEventDetails();
         refreshApplicationState();
     }
 
+    /**
+     * Loads the event document and refreshes the screen-specific state such as
+     * private invites, co-host status, and the visible actions.
+     */
     private void loadEventDetails() {
         FirestoreHelper.getDb().collection("events").document(eventId)
                 .get()
@@ -127,14 +143,26 @@ public class EventActivity extends AppCompatActivity {
                     }
 
                     List<String> invitedHosts = (List<String>) documentSnapshot.get("invitedHosts");
+                    List<String> invitedParticipants = (List<String>) documentSnapshot.get("invitedParticipants");
+                    List<String> declinedParticipantInvites = (List<String>) documentSnapshot.get("declinedParticipantInvites");
                     isInvitedHost = invitedHosts != null && invitedHosts.contains(userId);
+                    isInvitedParticipant = invitedParticipants != null && invitedParticipants.contains(userId);
+                    hasDeclinedParticipantInvite = declinedParticipantInvites != null
+                            && declinedParticipantInvites.contains(userId);
+                    isPrivateEvent = "Private".equalsIgnoreCase(documentSnapshot.getString("visibility"));
+                    isOrganizer = userId != null && userId.equals(documentSnapshot.getString("organizerId"));
 
                     eventDetailsList.clear();
                     if (isInvitedHost) {
                         eventDetailsList.add("YOU ARE A CO-HOST");
+                    } else if (isInvitedParticipant && EventFlowRules.normalizeStatus(currentApplicationStatus).isEmpty()) {
+                        eventDetailsList.add("YOU HAVE A PRIVATE WAITING LIST INVITE");
                     }
                     eventDetailsList.add("Total Spots: " + event.getTotalSpots());
                     eventDetailsList.add("Current Waiting List: " + event.getWaitingListCount());
+                    if (event.getWaitingListLimit() > 0) {
+                        eventDetailsList.add("Waiting List Limit: " + event.getWaitingListLimit());
+                    }
                     eventDetailsList.add(String.format(Locale.getDefault(), "Price: $%d", (int) event.getPrice()));
                     eventDetailsList.add("Age Group: " + safe(event.getAgeGroup(), "All Age Groups"));
                     eventDetailsList.add("Location: " + safe(event.getLocation(), "Location TBA"));
@@ -144,13 +172,19 @@ public class EventActivity extends AppCompatActivity {
                     costHeading.setText(String.format(Locale.getDefault(), "$%d", (int) event.getPrice()));
                     eventHeading.setText(safe(event.getName(), "Event"));
                     bindPoster(event.getPosterImage());
-
-                    Bitmap qr = QRCodeHelper.generateQRCode(eventId);
-                    if (qr != null) {
-                        qrCodeView.setImageBitmap(qr);
-                        qrCodeView.setVisibility(View.VISIBLE);
+                    if (lotteryGuidelinesView != null) {
+                        lotteryGuidelinesView.setText(buildLotteryGuidelines(event));
                     }
 
+                    Bitmap qr = QRCodeHelper.generateQRCode(eventId);
+                    if (!isPrivateEvent && qr != null) {
+                        qrCodeView.setImageBitmap(qr);
+                        qrCodeView.setVisibility(View.VISIBLE);
+                    } else {
+                        qrCodeView.setVisibility(View.GONE);
+                    }
+
+                    loadCurrentWaitingCount();
                     updateActionButtons();
                 })
                 .addOnFailureListener(e ->
@@ -189,6 +223,10 @@ public class EventActivity extends AppCompatActivity {
         Long spots = documentSnapshot.getLong("totalSpots");
         if (spots != null) {
             event.setTotalSpots(spots.intValue());
+        }
+        Long waitingListLimit = documentSnapshot.getLong("waitingListLimit");
+        if (waitingListLimit != null) {
+            event.setWaitingListLimit(waitingListLimit.intValue());
         }
         return event;
     }
@@ -238,28 +276,66 @@ public class EventActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Starts the entrant join flow after checking role, privacy, and capacity rules.
+     */
     private void joinWaitingList() {
         if (userId == null) {
             Toast.makeText(this, "Please log in to join", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (isOrganizer) {
+            Toast.makeText(this, "Organizers cannot join their own waiting list.", Toast.LENGTH_LONG).show();
             return;
         }
         if (isInvitedHost) {
             Toast.makeText(this, "Co-hosts cannot join the waiting list.", Toast.LENGTH_LONG).show();
             return;
         }
+        if (isPrivateEvent && !isInvitedParticipant && EventFlowRules.normalizeStatus(currentApplicationStatus).isEmpty()) {
+            Toast.makeText(this, "This private event requires an invitation.", Toast.LENGTH_LONG).show();
+            return;
+        }
 
         FirestoreHelper.getDb().collection("events").document(eventId).get()
                 .addOnSuccessListener(documentSnapshot -> {
-                    Boolean verificationRequired = documentSnapshot.getBoolean("geolocationVerification");
-                    if (verificationRequired != null && verificationRequired) {
-                        List<String> allowedLocations = (List<String>) documentSnapshot.get("geolocationList");
-                        checkLocationAndJoin(allowedLocations);
-                    } else {
-                        tryGetLocationAndJoin();
-                    }
+                    Long waitingListLimit = documentSnapshot.getLong("waitingListLimit");
+                    validateWaitingListCapacity(waitingListLimit, () -> {
+                        Boolean verificationRequired = documentSnapshot.getBoolean("geolocationVerification");
+                        if (verificationRequired != null && verificationRequired) {
+                            List<String> allowedLocations = (List<String>) documentSnapshot.get("geolocationList");
+                            checkLocationAndJoin(allowedLocations);
+                        } else {
+                            tryGetLocationAndJoin();
+                        }
+                    });
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to verify event settings", Toast.LENGTH_SHORT).show());
+    }
+
+    /**
+     * Enforces the optional waiting-list cap before a user is allowed to join.
+     */
+    private void validateWaitingListCapacity(Long waitingListLimit, Runnable onAllowed) {
+        if (waitingListLimit == null || waitingListLimit <= 0) {
+            onAllowed.run();
+            return;
+        }
+
+        FirestoreHelper.getDb().collection("applications")
+                .whereEqualTo("eventId", eventId)
+                .whereEqualTo("status", "waiting")
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.size() >= waitingListLimit) {
+                        Toast.makeText(this, "This waiting list is full.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    onAllowed.run();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Unable to verify waiting list capacity", Toast.LENGTH_SHORT).show());
     }
 
     private void tryGetLocationAndJoin() {
@@ -306,10 +382,30 @@ public class EventActivity extends AppCompatActivity {
         FirestoreHelper.getDb().collection("applications")
                 .add(application)
                 .addOnSuccessListener(ref -> {
-                    currentApplicationId = ref.getId();
-                    currentApplicationStatus = "waiting";
-                    updateActionButtons();
-                    Toast.makeText(this, "Joined waiting list!", Toast.LENGTH_SHORT).show();
+                    FirestoreHelper.getDb().collection("events")
+                            .document(eventId)
+                            .update(
+                                    "waitingList", FieldValue.arrayUnion(userId),
+                                    "invitedParticipants", FieldValue.arrayRemove(userId),
+                                    "declinedParticipantInvites", FieldValue.arrayRemove(userId)
+                            )
+                            .addOnSuccessListener(unused -> {
+                                currentApplicationId = ref.getId();
+                                currentApplicationStatus = "waiting";
+                                isInvitedParticipant = false;
+                                hasDeclinedParticipantInvite = false;
+                                updateActionButtons();
+                                loadEventDetails();
+                                Toast.makeText(this, "Joined waiting list!", Toast.LENGTH_SHORT).show();
+                            })
+                            .addOnFailureListener(e -> {
+                                currentApplicationId = ref.getId();
+                                currentApplicationStatus = "waiting";
+                                isInvitedParticipant = false;
+                                hasDeclinedParticipantInvite = false;
+                                updateActionButtons();
+                                Toast.makeText(this, "Joined waiting list!", Toast.LENGTH_SHORT).show();
+                            });
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to join", Toast.LENGTH_SHORT).show());
@@ -325,10 +421,22 @@ public class EventActivity extends AppCompatActivity {
                 .document(currentApplicationId)
                 .delete()
                 .addOnSuccessListener(unused -> {
-                    currentApplicationId = null;
-                    currentApplicationStatus = "";
-                    updateActionButtons();
-                    Toast.makeText(this, "Left waiting list", Toast.LENGTH_SHORT).show();
+                    FirestoreHelper.getDb().collection("events")
+                            .document(eventId)
+                            .update("waitingList", FieldValue.arrayRemove(userId))
+                            .addOnSuccessListener(ignore -> {
+                                currentApplicationId = null;
+                                currentApplicationStatus = "";
+                                updateActionButtons();
+                                loadEventDetails();
+                                Toast.makeText(this, "Left waiting list", Toast.LENGTH_SHORT).show();
+                            })
+                            .addOnFailureListener(e -> {
+                                currentApplicationId = null;
+                                currentApplicationStatus = "";
+                                updateActionButtons();
+                                Toast.makeText(this, "Left waiting list", Toast.LENGTH_SHORT).show();
+                            });
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to leave", Toast.LENGTH_SHORT).show());
@@ -352,26 +460,93 @@ public class EventActivity extends AppCompatActivity {
                         Toast.makeText(this, "Failed to update response", Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * Accept handles two cases: a private waiting-list invite joins the list,
+     * while a selected entrant confirms registration.
+     */
+    private void handleAcceptAction() {
+        if ("invited".equals(getEffectiveStatus())) {
+            joinWaitingList();
+            return;
+        }
+        updateApplicationStatus("accepted", "Invitation accepted");
+    }
+
+    /**
+     * Decline handles both private invites and selected-entrant responses.
+     */
+    private void handleDeclineAction() {
+        if ("invited".equals(getEffectiveStatus())) {
+            declinePrivateInvite();
+            return;
+        }
+        updateApplicationStatus("declined", "Invitation declined");
+    }
+
+    /**
+     * Records that a user turned down a private waiting-list invite.
+     */
+    private void declinePrivateInvite() {
+        FirestoreHelper.getDb().collection("events").document(eventId)
+                .update(
+                        "invitedParticipants", FieldValue.arrayRemove(userId),
+                        "declinedParticipantInvites", FieldValue.arrayUnion(userId)
+                )
+                .addOnSuccessListener(unused -> {
+                    isInvitedParticipant = false;
+                    hasDeclinedParticipantInvite = true;
+                    updateActionButtons();
+                    Toast.makeText(this, "Invitation declined", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to decline invite", Toast.LENGTH_SHORT).show());
+    }
+
+    /**
+     * Shows only the actions that make sense for the current role and status.
+     */
     private void updateActionButtons() {
+        String effectiveStatus = getEffectiveStatus();
+        if (isOrganizer) {
+            if (statusHeading != null) {
+                statusHeading.setText("Status : ORGANIZER");
+            }
+            if (helperMessageView != null) {
+                helperMessageView.setText("You are organizing this event.");
+            }
+            btnJoin.setVisibility(View.GONE);
+            btnLeave.setVisibility(View.GONE);
+            btnAccept.setVisibility(View.GONE);
+            btnDecline.setVisibility(View.GONE);
+            return;
+        }
+
         if (statusHeading != null) {
-            statusHeading.setText(EventFlowRules.getEventStatusLabel(currentApplicationStatus, isInvitedHost));
+            statusHeading.setText(EventFlowRules.getEventStatusLabel(effectiveStatus, isInvitedHost));
         }
         if (helperMessageView != null) {
             helperMessageView.setText(getHelperMessage());
         }
 
-        btnJoin.setVisibility(EventFlowRules.canJoin(currentApplicationStatus, isInvitedHost) ? View.VISIBLE : View.GONE);
-        btnLeave.setVisibility(EventFlowRules.canLeave(currentApplicationStatus) ? View.VISIBLE : View.GONE);
-        btnAccept.setVisibility(EventFlowRules.canAccept(currentApplicationStatus) ? View.VISIBLE : View.GONE);
-        btnDecline.setVisibility(EventFlowRules.canDecline(currentApplicationStatus) ? View.VISIBLE : View.GONE);
+        boolean showJoin = EventFlowRules.canJoin(effectiveStatus, isInvitedHost)
+                && !(isPrivateEvent && !isInvitedParticipant);
+        btnJoin.setVisibility(showJoin ? View.VISIBLE : View.GONE);
+        btnLeave.setVisibility(EventFlowRules.canLeave(effectiveStatus) ? View.VISIBLE : View.GONE);
+        btnAccept.setVisibility(EventFlowRules.canAccept(effectiveStatus) ? View.VISIBLE : View.GONE);
+        btnDecline.setVisibility(EventFlowRules.canDecline(effectiveStatus) ? View.VISIBLE : View.GONE);
     }
 
     private String getHelperMessage() {
         if (isInvitedHost) {
             return "You are a co-host for this event.";
         }
+        if (isOrganizer) {
+            return "You are organizing this event.";
+        }
 
-        switch (EventFlowRules.normalizeStatus(currentApplicationStatus)) {
+        switch (EventFlowRules.normalizeStatus(getEffectiveStatus())) {
+            case "invited":
+                return "This is a private event. Accept the invitation to join the waiting list.";
             case "waiting":
                 return "You are on the waiting list.";
             case "selected":
@@ -382,9 +557,43 @@ public class EventActivity extends AppCompatActivity {
                 return "You declined your invitation.";
             case "cancelled":
                 return "Your invitation was cancelled.";
+            case "invite_declined":
+                return "You declined this private waiting list invitation.";
             default:
+                if (isPrivateEvent) {
+                    return "This is a private event. An invitation is required to join.";
+                }
                 return "Join the waiting list to participate.";
         }
+    }
+
+    private String getEffectiveStatus() {
+        String normalized = EventFlowRules.normalizeStatus(currentApplicationStatus);
+        if (!normalized.isEmpty()) {
+            return normalized;
+        }
+        if (isInvitedParticipant) {
+            return "invited";
+        }
+        if (hasDeclinedParticipantInvite) {
+            return "invite_declined";
+        }
+        return normalized;
+    }
+
+    /**
+     * Gives entrants a short explanation of how the lottery is meant to work.
+     */
+    private String buildLotteryGuidelines(EventModel event) {
+        int spots = event != null ? event.getTotalSpots() : 0;
+        int waitlistCap = event != null ? event.getWaitingListLimit() : 0;
+        String capText = waitlistCap > 0
+                ? " Waiting list capacity is " + waitlistCap + "."
+                : "";
+        return "Lottery guideline: the organizer draws randomly from entrants on the waiting list for "
+                + spots + " available spot" + (spots == 1 ? "" : "s")
+                + ". Selected entrants must accept in the app, and declined or cancelled spots may be filled by a replacement draw."
+                + capText;
     }
 
     private void openComments() {
@@ -393,6 +602,22 @@ public class EventActivity extends AppCompatActivity {
                 .replace(R.id.fragment_container, fragment)
                 .addToBackStack(null)
                 .commit();
+    }
+
+    private void loadCurrentWaitingCount() {
+        FirestoreHelper.getDb().collection("applications")
+                .whereEqualTo("eventId", eventId)
+                .whereEqualTo("status", "waiting")
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    for (int i = 0; i < eventDetailsList.size(); i++) {
+                        if (eventDetailsList.get(i).startsWith("Current Waiting List:")) {
+                            eventDetailsList.set(i, "Current Waiting List: " + snapshot.size());
+                            adapter.notifyDataSetChanged();
+                            break;
+                        }
+                    }
+                });
     }
 
     private String getAddressString(Location location) {

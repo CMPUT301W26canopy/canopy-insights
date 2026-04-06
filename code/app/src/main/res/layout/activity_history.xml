@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
+    android:background="#FCFAFF"
     android:orientation="vertical">
 
     <TextView
@@ -13,7 +13,7 @@
         android:paddingEnd="20dp"
         android:paddingBottom="12dp"
         android:text="HISTORY"
-        android:textColor="@color/black"
+        android:textColor="#221A35"
         android:textSize="22sp"
         android:textStyle="bold" />
 
@@ -40,7 +40,7 @@
             android:gravity="center"
             android:padding="24dp"
             android:text="No event history yet."
-            android:textColor="#7A7383"
+            android:textColor="#6E647E"
             android:textSize="16sp"
             android:visibility="gone" />
     </FrameLayout>
