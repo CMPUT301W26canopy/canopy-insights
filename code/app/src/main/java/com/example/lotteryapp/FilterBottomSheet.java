@@ -20,13 +20,36 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
  */
 public class FilterBottomSheet extends BottomSheetDialogFragment {
 
+    /**
+     * Interface definition for a callback to be invoked when filters are applied or reset.
+     */
     public interface FilterCallback {
+        /**
+         * Called when the user clicks the "Apply" button with selected filter values.
+         * @param minPrice The minimum price selected.
+         * @param maxPrice The maximum price selected.
+         * @param minSpots The minimum number of spots selected.
+         * @param maxSpots The maximum number of spots selected.
+         * @param month The month selected for filtering (e.g., "Jan", "Any").
+         * @param year The year selected for filtering (e.g., "2025", "Any").
+         * @param ageGroup The age group category selected.
+         * @param country The location/country string entered for filtering.
+         */
         void onApply(double minPrice, double maxPrice, int minSpots, int maxSpots,
                      String month, String year, String ageGroup, String country);
+
+        /**
+         * Called when the user clicks the "Reset" button to clear all active filters.
+         */
         void onReset();
     }
 
     private FilterCallback callback;
+
+    /**
+     * Sets the callback listener to handle filter actions.
+     * @param callback The {@link FilterCallback} implementation.
+     */
     public void setFilterCallback(FilterCallback callback) {
         this.callback = callback;
     }
@@ -37,6 +60,7 @@ public class FilterBottomSheet extends BottomSheetDialogFragment {
                              @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_filter, container, false);
     }
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);

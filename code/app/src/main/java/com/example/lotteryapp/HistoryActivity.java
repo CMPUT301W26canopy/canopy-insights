@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Displays the current user's application history across events.
+ * Provides a chronological feed of events the user has interacted with.
  */
 public class HistoryActivity extends AppCompatActivity {
 
@@ -36,6 +37,11 @@ public class HistoryActivity extends AppCompatActivity {
     private DeviceData deviceData;
     private String accountId;
 
+    /**
+     * Static helper to launch HistoryActivity for a specific account.
+     * @param activity The calling activity.
+     * @param accountId The ID of the account whose history should be shown.
+     */
     public static void openFrom(Activity activity, @Nullable String accountId) {
         String resolvedAccountId = accountId;
         if (resolvedAccountId == null || resolvedAccountId.trim().isEmpty()) {
@@ -84,6 +90,9 @@ public class HistoryActivity extends AppCompatActivity {
         loadHistory();
     }
 
+    /**
+     * Fetches all event applications for the current user from Firestore.
+     */
     private void loadHistory() {
         showEmptyState("Loading history...");
 
@@ -114,6 +123,12 @@ public class HistoryActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> showEmptyState("Failed to load history."));
     }
 
+    /**
+     * Loads details for a specific event associated with a history item.
+     * @param eventId The ID of the event to fetch.
+     * @param rawStatus The user's application status for this event.
+     * @param pending Counter to track when all items are loaded.
+     */
     private void loadHistoryItem(String eventId, String rawStatus, AtomicInteger pending) {
         FirestoreHelper.getDb().collection("events")
                 .document(eventId)
@@ -155,6 +170,11 @@ public class HistoryActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Fetches the waiting list count for a specific history item and marks its loading as complete.
+     * @param item The history item to update.
+     * @param pending Counter to track when all items are loaded.
+     */
     private void loadWaitingCountAndFinish(HistoryAdapter.HistoryItem item, AtomicInteger pending) {
         FirestoreHelper.getDb().collection("applications")
                 .whereEqualTo("eventId", item.eventId)
@@ -171,12 +191,19 @@ public class HistoryActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Decrements the pending counter and triggers the final loading sequence if zero.
+     * @param pending The counter to decrement.
+     */
     private void markOneComplete(AtomicInteger pending) {
         if (pending.decrementAndGet() == 0) {
             finishLoading();
         }
     }
 
+    /**
+     * Sorts the loaded history items by date and refreshes the RecyclerView display.
+     */
     private void finishLoading() {
         Collections.sort(historyItems, (left, right) ->
                 Long.compare(right.sortTimeMs, left.sortTimeMs));
@@ -191,12 +218,19 @@ public class HistoryActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Displays a message in the empty state view.
+     * @param message The message to show.
+     */
     private void showEmptyState(String message) {
         emptyView.setText(message);
         emptyView.setVisibility(View.VISIBLE);
         recyclerView.setVisibility(View.GONE);
     }
 
+    /**
+     * Wires the shared bottom navigation bar actions.
+     */
     private void setupBottomNav() {
         findViewById(R.id.navHome).setOnClickListener(v ->
                 startActivity(new Intent(this, MainActivity.class)));
@@ -220,6 +254,11 @@ public class HistoryActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Normalizes age group labels for consistent display.
+     * @param value The raw age group value.
+     * @return A standard age group label.
+     */
     private String normalizeAgeGroup(String value) {
         String safeValue = safe(value);
         if (safeValue.isEmpty() || safeValue.equalsIgnoreCase("All Ages")) {
@@ -228,6 +267,11 @@ public class HistoryActivity extends AppCompatActivity {
         return safeValue;
     }
 
+    /**
+     * Attempts to parse and format a date string into a standard format.
+     * @param rawDate The raw date string.
+     * @return The formatted date string, or the original if parsing fails.
+     */
     private String formatEventDate(String rawDate) {
         if (rawDate == null || rawDate.trim().isEmpty()) {
             return "";
@@ -256,6 +300,11 @@ public class HistoryActivity extends AppCompatActivity {
         return rawDate;
     }
 
+    /**
+     * Converts a raw date string into millisecond time for sorting.
+     * @param rawDate The raw date string.
+     * @return The time in milliseconds, or 0 if parsing fails.
+     */
     private long parseDateToMillis(String rawDate) {
         if (rawDate == null || rawDate.trim().isEmpty()) {
             return 0L;
@@ -284,6 +333,12 @@ public class HistoryActivity extends AppCompatActivity {
         return 0L;
     }
 
+    /**
+     * Safely retrieves a double value from a document snapshot.
+     * @param snapshot The document snapshot.
+     * @param field The field name.
+     * @return The double value, or 0 if not found.
+     */
     private double getDouble(DocumentSnapshot snapshot, String field) {
         Double doubleValue = snapshot.getDouble(field);
         if (doubleValue != null) {
@@ -294,24 +349,52 @@ public class HistoryActivity extends AppCompatActivity {
         return longValue != null ? longValue.doubleValue() : 0d;
     }
 
+    /**
+     * Safely retrieves an integer value from a document snapshot.
+     * @param snapshot The document snapshot.
+     * @param field The field name.
+     * @return The integer value, or 0 if not found.
+     */
     private int getInt(DocumentSnapshot snapshot, String field) {
         Long longValue = snapshot.getLong(field);
         return longValue != null ? longValue.intValue() : 0;
     }
 
+    /**
+     * Trims and provides an empty string for null values.
+     * @param value The candidate value.
+     * @return The trimmed string or empty string.
+     */
     private String safe(String value) {
         return value == null ? "" : value.trim();
     }
 
+    /**
+     * Provides a fallback string if the value is null or blank.
+     * @param value The candidate value.
+     * @param fallback The fallback value.
+     * @return The resulting string.
+     */
     private String valueOrDefault(String value, String fallback) {
         String safeValue = safe(value);
         return safeValue.isEmpty() ? fallback : safeValue;
     }
 
+    /**
+     * Converts an object to its string representation.
+     * @param value The object value.
+     * @return The string representation or null.
+     */
     private String asString(Object value) {
         return value == null ? null : String.valueOf(value);
     }
 
+    /**
+     * Picks the first non-blank string from two options.
+     * @param first The first choice.
+     * @param second The second choice.
+     * @return The first non-blank choice or null.
+     */
     private String firstNonBlank(String first, String second) {
         if (first != null && !first.trim().isEmpty()) {
             return first;
