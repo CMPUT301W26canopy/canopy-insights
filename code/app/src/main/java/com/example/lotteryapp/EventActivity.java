@@ -803,6 +803,7 @@ public class EventActivity extends AppCompatActivity {
 
         findViewById(R.id.navCreate).setOnClickListener(v ->
                 startActivity(new Intent(this, OrganizerActivity.class)));
+<<<<<<< Updated upstream
 
         findViewById(R.id.navHistory).setOnClickListener(v ->
                 HistoryActivity.openFrom(this, userId));
@@ -816,6 +817,14 @@ public class EventActivity extends AppCompatActivity {
                 startActivity(new Intent(this, LoginActivity.class));
             }
         });
+=======
+        View navHistory = findViewById(R.id.navHistory);
+        if (navHistory != null) navHistory.setOnClickListener(v ->
+                NavigationHelper.openHistory(this));
+        View navProfile = findViewById(R.id.navProfile);
+        if (navProfile != null) navProfile.setOnClickListener(v ->
+                startActivity(new Intent(this, LoginActivity.class)));
+>>>>>>> Stashed changes
     }
 
     private static class SimpleTextAdapter extends RecyclerView.Adapter<SimpleTextAdapter.ViewHolder> {

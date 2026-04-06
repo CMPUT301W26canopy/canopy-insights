@@ -172,7 +172,11 @@ public class MainActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.navHistory).setOnClickListener(v ->
+<<<<<<< Updated upstream
                 HistoryActivity.openFrom(this, deviceData.getAccountID()));
+=======
+                NavigationHelper.openHistory(this));
+>>>>>>> Stashed changes
 
         findViewById(R.id.navProfile).setOnClickListener(v -> {
             if (deviceData.isLoggedIn()) {

@@ -14,15 +14,24 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+<<<<<<< Updated upstream
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+=======
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+
+>>>>>>> Stashed changes
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+<<<<<<< Updated upstream
 import java.util.Locale;
 import java.util.Map;
+=======
+>>>>>>> Stashed changes
 
 /**
  * A fragment representing a list of items for the inbox of a user.
@@ -33,11 +42,13 @@ public class InboxFragment extends Fragment {
     private String accountID;
     private MyInboxRecyclerViewAdapter adapter;
     private final List<NotificationModel> notificationList = new ArrayList<>();
+<<<<<<< Updated upstream
     private RecyclerView recyclerView;
     private TextView emptyView;
+=======
+>>>>>>> Stashed changes
 
-    public InboxFragment() {
-    }
+    public InboxFragment() {}
 
     public static InboxFragment newInstance(String accountID) {
         InboxFragment fragment = new InboxFragment();
@@ -74,25 +85,34 @@ public class InboxFragment extends Fragment {
 
         ImageButton btnClose = view.findViewById(R.id.btn_close_inbox);
         if (btnClose != null) {
-            btnClose.setOnClickListener(v -> {
-                getParentFragmentManager().beginTransaction()
-                        .remove(InboxFragment.this)
-                        .commit();
-            });
+            btnClose.setOnClickListener(v ->
+                    getParentFragmentManager().beginTransaction()
+                            .remove(InboxFragment.this)
+                            .commit());
         }
 
+<<<<<<< Updated upstream
         if (accountID != null && !accountID.trim().isEmpty()) {
             fetchNotifications();
         } else {
             Toast.makeText(getContext(), "Error: No Account ID found", Toast.LENGTH_SHORT).show();
             updateEmptyState();
+=======
+        if (accountID != null) {
+            checkOptOutThenFetch();
+        } else {
+            Toast.makeText(getContext(), "Please log in to view notifications",
+                    Toast.LENGTH_SHORT).show();
+>>>>>>> Stashed changes
         }
     }
 
-    private void fetchNotifications() {
-        FirestoreHelper.getDb().collection("notifications")
+    // checks if user opted out before loading — covers #12
+    private void checkOptOutThenFetch() {
+        FirestoreHelper.getDb().collection("accounts")
                 .document(accountID)
                 .get()
+<<<<<<< Updated upstream
                 .addOnSuccessListener(documentSnapshot -> {
                     notificationList.clear();
 
@@ -193,3 +213,52 @@ public class InboxFragment extends Fragment {
         return null;
     }
 }
+=======
+                .addOnSuccessListener(doc -> {
+                    ProfileModel profile = doc.toObject(ProfileModel.class);
+                    if (profile != null && !profile.isNotificationEnabled()) {
+                        showEmpty("Notifications are turned off");
+                        return;
+                    }
+                    fetchNotifications();
+                })
+                .addOnFailureListener(e -> fetchNotifications());
+    }
+
+    // reads individual notification documents by receiverAccountID
+    private void fetchNotifications() {
+        FirestoreHelper.getDb().collection("notifications")
+                .whereEqualTo("receiverAccountID", accountID)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    notificationList.clear();
+                    for (QueryDocumentSnapshot doc : snap) {
+                        NotificationModel notif = new NotificationModel();
+                        notif.setSenderAccountID(doc.getString("senderAccountID"));
+                        notif.setReceiverAccountID(doc.getString("receiverAccountID"));
+                        notif.setMessage(doc.getString("message"));
+                        notif.setTimestamp(doc.getString("timestamp"));
+                        notif.setEventId(doc.getString("eventId"));
+                        notificationList.add(notif);
+                    }
+                    adapter.notifyDataSetChanged();
+                    if (notificationList.isEmpty()) showEmpty("No notifications yet");
+                })
+                .addOnFailureListener(e -> {
+                    if (isAdded())
+                        Toast.makeText(getContext(), "Failed to load notifications",
+                                Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void showEmpty(String message) {
+        if (!isAdded() || getView() == null) return;
+        TextView tv = getView().findViewById(R.id.tvEmptyInbox);
+        if (tv != null) {
+            tv.setVisibility(View.VISIBLE);
+            tv.setText(message);
+        }
+    }
+}
+>>>>>>> Stashed changes

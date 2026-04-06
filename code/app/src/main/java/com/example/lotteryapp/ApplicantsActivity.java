@@ -23,20 +23,15 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 public class ApplicantsActivity extends AppCompatActivity {
@@ -213,25 +208,24 @@ public class ApplicantsActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(snap -> {
                     applicantsList.clear();
-                    List<String> statuses = new ArrayList<>();
+                    boolean lotteryRan = false;
                     for (QueryDocumentSnapshot doc : snap) {
                         Map<String, String> a = new HashMap<>();
-                        String status = doc.getString("status");
                         a.put("id",       doc.getId());
                         a.put("userName", doc.getString("userName"));
                         a.put("userId",   doc.getString("userId"));
-                        a.put("status",   status);
+                        a.put("status",   doc.getString("status"));
                         applicantsList.add(a);
-                        statuses.add(status);
+                        if ("selected".equals(doc.getString("status"))) lotteryRan = true;
                     }
                     tvParticipantsLabel.setText("PARTICIPANTS | applicants: " + applicantsList.size());
                     filterList("all");
                     setActiveFilter((Button) findViewById(R.id.btnFilterAll));
 
-                    if (EventFlowRules.hasLotteryStarted(statuses)) {
+                    if (lotteryRan) {
                         btnRunLottery.setVisibility(View.GONE);
                         btnReplacementDraw.setVisibility(View.VISIBLE);
-                        btnCancelNoShows.setVisibility(EventFlowRules.hasPendingSelected(statuses) ? View.VISIBLE : View.GONE);
+                        btnCancelNoShows.setVisibility(View.VISIBLE);
                     } else {
                         btnRunLottery.setVisibility(View.VISIBLE);
                         btnReplacementDraw.setVisibility(View.GONE);
@@ -292,31 +286,9 @@ public class ApplicantsActivity extends AppCompatActivity {
         int spotsToFill = Math.min(spots, waiting.size());
         WriteBatch batch = FirestoreHelper.getDb().batch();
         for (int i = 0; i < spotsToFill; i++) {
-            Map<String, String> applicant = waiting.get(i);
-            batch.update(
-                    FirestoreHelper.getDb().collection("applications")
-                            .document(applicant.get("id")),
-                    "status",
-                    "selected"
-            );
-            queueNotification(
-                    batch,
-                    applicant.get("userId"),
-                    "You were selected for " + safeEventName()
-                            + ". Open the event to accept or decline your invitation."
-            );
+            batch.update(FirestoreHelper.getDb().collection("applications")
+                    .document(waiting.get(i).get("id")), "status", "selected");
         }
-
-        for (int i = spotsToFill; i < waiting.size(); i++) {
-            Map<String, String> applicant = waiting.get(i);
-            queueNotification(
-                    batch,
-                    applicant.get("userId"),
-                    "You were not selected in the latest draw for " + safeEventName()
-                            + ". You are still on the waiting list."
-            );
-        }
-
         batch.commit()
                 .addOnSuccessListener(v -> {
                     Toast.makeText(this, spotsToFill + " selected!", Toast.LENGTH_SHORT).show();
@@ -327,15 +299,15 @@ public class ApplicantsActivity extends AppCompatActivity {
     }
 
     private void runReplacementDraw() {
-        List<String> statuses = new ArrayList<>();
+        int accepted = 0;
         List<Map<String, String>> waiting = new ArrayList<>();
         for (Map<String, String> a : applicantsList) {
-            statuses.add(a.get("status"));
+            if ("accepted".equals(a.get("status"))) accepted++;
             if ("waiting".equals(a.get("status")))  waiting.add(a);
         }
         String spotsStr = etTotalSpots.getText().toString().trim();
         int spots = spotsStr.isEmpty() ? totalSpots : Integer.parseInt(spotsStr);
-        int spotsLeft = spots - EventFlowRules.countOccupiedSpots(statuses);
+        int spotsLeft = spots - accepted;
 
         if (spotsLeft <= 0) {
             Toast.makeText(this, "All spots filled!", Toast.LENGTH_SHORT).show();
@@ -350,19 +322,8 @@ public class ApplicantsActivity extends AppCompatActivity {
         int replacements = Math.min(spotsLeft, waiting.size());
         WriteBatch batch = FirestoreHelper.getDb().batch();
         for (int i = 0; i < replacements; i++) {
-            Map<String, String> applicant = waiting.get(i);
-            batch.update(
-                    FirestoreHelper.getDb().collection("applications")
-                            .document(applicant.get("id")),
-                    "status",
-                    "selected"
-            );
-            queueNotification(
-                    batch,
-                    applicant.get("userId"),
-                    "A spot opened up for " + safeEventName()
-                            + ". You were selected and can now accept or decline."
-            );
+            batch.update(FirestoreHelper.getDb().collection("applications")
+                    .document(waiting.get(i).get("id")), "status", "selected");
         }
         batch.commit()
                 .addOnSuccessListener(v -> {
@@ -383,20 +344,9 @@ public class ApplicantsActivity extends AppCompatActivity {
             return;
         }
         WriteBatch batch = FirestoreHelper.getDb().batch();
-        for (Map<String, String> a : noShows) {
-            batch.update(
-                    FirestoreHelper.getDb().collection("applications")
-                            .document(a.get("id")),
-                    "status",
-                    "cancelled"
-            );
-            queueNotification(
-                    batch,
-                    a.get("userId"),
-                    "Your invitation for " + safeEventName()
-                            + " expired because the organizer cancelled pending responses."
-            );
-        }
+        for (Map<String, String> a : noShows)
+            batch.update(FirestoreHelper.getDb().collection("applications")
+                    .document(a.get("id")), "status", "cancelled");
 
         batch.commit()
                 .addOnSuccessListener(v -> {
@@ -452,13 +402,13 @@ public class ApplicantsActivity extends AppCompatActivity {
 
         List<String> selectedUserIds = new ArrayList<>();
         for (Map<String, String> applicant : applicantsList) {
-            if (EventFlowRules.shouldExportToCsv(applicant.get("status"))) {
+            if ("selected".equals(applicant.get("status"))) {
                 selectedUserIds.add(applicant.get("userId"));
             }
         }
 
         if (selectedUserIds.isEmpty()) {
-            Toast.makeText(this, "No accepted entrants to export.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "No selected applicants to export.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -508,7 +458,7 @@ public class ApplicantsActivity extends AppCompatActivity {
                 if (uri != null) {
                     try (OutputStream os = getContentResolver().openOutputStream(uri)) {
                         os.write(csv.toString().getBytes(StandardCharsets.UTF_8));
-                        Toast.makeText(this, "Downloaded CSV file of accepted entrants.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Downloaded CSV file of those who won.", Toast.LENGTH_SHORT).show();
                     }
                 }
             } else {
@@ -518,33 +468,5 @@ public class ApplicantsActivity extends AppCompatActivity {
             Log.e("CSV_EXPORT", "Error saving CSV", e);
             Toast.makeText(this, "Failed to save CSV file", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    private void queueNotification(WriteBatch batch, String receiverId, String message) {
-        if (receiverId == null || receiverId.trim().isEmpty()) {
-            return;
-        }
-
-        String senderId = DeviceData.getInstance(this).getAccountID();
-
-        Map<String, Object> notificationMap = new HashMap<>();
-        notificationMap.put("senderAccountID", senderId);
-        notificationMap.put("receiverAccountID", receiverId);
-        notificationMap.put("message", message);
-        notificationMap.put("timestamp", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date()));
-        notificationMap.put("eventID", eventId);
-
-        Map<String, Object> updateData = new HashMap<>();
-        updateData.put("notificationList", FieldValue.arrayUnion(notificationMap));
-
-        batch.set(
-                FirestoreHelper.getDb().collection("notifications").document(receiverId),
-                updateData,
-                SetOptions.merge()
-        );
-    }
-
-    private String safeEventName() {
-        return eventName != null && !eventName.trim().isEmpty() ? eventName : "this event";
     }
 }

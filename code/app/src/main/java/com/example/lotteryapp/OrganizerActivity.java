@@ -191,12 +191,16 @@ public class OrganizerActivity extends AppCompatActivity {
         findViewById(R.id.navCreate).setOnClickListener(v -> {}); // already here
         findViewById(R.id.navHistory).setOnClickListener(v ->
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 Toast.makeText(this, "History — coming soon", Toast.LENGTH_SHORT).show());
         findViewById(R.id.navProfile).setOnClickListener(v ->
                 startActivity(new Intent(this, LoginActivity.class)));
 =======
                 HistoryActivity.openFrom(this, deviceData.getAccountID()));
 
+=======
+                NavigationHelper.openHistory(this));
+>>>>>>> Stashed changes
         findViewById(R.id.navProfile).setOnClickListener(v -> {
             if (deviceData.isLoggedIn()) {
                 Intent intent = new Intent(this, ProfileActivity.class);

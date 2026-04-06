@@ -68,7 +68,16 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.navHistory).setOnClickListener(v ->
+<<<<<<< Updated upstream
                 HistoryActivity.openFrom(this, DeviceData.getInstance(this).getAccountID()));
+=======
+                NavigationHelper.openHistory(this));
+
+        findViewById(R.id.navProfile).setOnClickListener(v ->{
+            //ProfileActivity
+            // Toast.makeText(this, "Profile — coming soon", Toast.LENGTH_SHORT).show());
+
+>>>>>>> Stashed changes
 
         findViewById(R.id.navProfile).setOnClickListener(v -> {
         });
