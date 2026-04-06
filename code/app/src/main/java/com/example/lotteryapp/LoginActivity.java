@@ -87,6 +87,10 @@ public class LoginActivity extends AppCompatActivity {
         setupBottomNav();
     }
 
+    /**
+     * Updates the visual state of the Login/Sign-up toggle buttons.
+     * @param isLogin True if the login tab is active, false if sign-up is active.
+     */
     private void updateToggleUI(boolean isLogin) {
         if (isLogin) {
             loginToggleBtn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#6B5FA6")));
@@ -143,6 +147,7 @@ public class LoginActivity extends AppCompatActivity {
 
     /**
      * Supports older device-login documents that were stored without a deviceId field.
+     * @param deviceId The unique hardware identifier for the device.
      */
     private void findLegacyDeviceAccount(String deviceId) {
         String generatedAccountId = buildDeviceAccountId(deviceId);
@@ -175,6 +180,8 @@ public class LoginActivity extends AppCompatActivity {
     /**
      * Completes the session with an already-known device account and fills in
      * any newer fields that older documents may be missing.
+     * @param deviceId The hardware identifier.
+     * @param documentSnapshot The Firestore document for the account.
      */
     private void reuseDeviceAccount(String deviceId, DocumentSnapshot documentSnapshot) {
         String accountId = firstNonBlank(documentSnapshot.getString("accountID"), documentSnapshot.getId());
@@ -208,6 +215,7 @@ public class LoginActivity extends AppCompatActivity {
     /**
      * Creates a guest entrant profile tied to this device so the user can keep
      * using the app without a username/password account.
+     * @param deviceId The hardware identifier to link the account to.
      */
     private void createDeviceAccount(String deviceId) {
         String accountId = buildDeviceAccountId(deviceId);
@@ -236,6 +244,9 @@ public class LoginActivity extends AppCompatActivity {
 
     /**
      * Starts the normal profile flow after a successful sign-in.
+     * @param accountId The unique account ID.
+     * @param username The display username.
+     * @param userType The role assigned to the user (e.g., entrant, admin).
      */
     private void openProfile(String accountId, String username, String userType) {
         deviceData.createLoginSession(accountId, username, userType);
@@ -247,6 +258,10 @@ public class LoginActivity extends AppCompatActivity {
         finish();
     }
 
+    /**
+     * Sends a default welcome notification to a newly created device-based account.
+     * @param accountId The ID of the account to receive the notification.
+     */
     private void seedWelcomeNotification(String accountId) {
         NotificationModel notification = new NotificationModel();
         notification.setSenderAccountID("SYSTEM");
@@ -285,6 +300,8 @@ public class LoginActivity extends AppCompatActivity {
 
     /**
      * Builds a readable guest username from the device identifier.
+     * @param deviceId The hardware identifier.
+     * @return A formatted guest username string.
      */
     private String buildGuestUsername(String deviceId) {
         String suffix = deviceId == null ? "device" : deviceId.replaceAll("[^A-Za-z0-9]", "");
@@ -297,10 +314,21 @@ public class LoginActivity extends AppCompatActivity {
         return "guest_" + suffix.toLowerCase(Locale.getDefault());
     }
 
+    /**
+     * Generates a unique document ID for a device-linked account.
+     * @param deviceId The hardware identifier.
+     * @return A string formatted as "device_{identifier}".
+     */
     private String buildDeviceAccountId(String deviceId) {
         return "device_" + deviceId.replaceAll("[^A-Za-z0-9_-]", "");
     }
 
+    /**
+     * Helper to pick the first non-blank string from two options.
+     * @param first The primary string choice.
+     * @param second The fallback string choice.
+     * @return The first non-blank string, or the second if the first is invalid.
+     */
     private String firstNonBlank(String first, String second) {
         if (first != null && !first.trim().isEmpty()) {
             return first;

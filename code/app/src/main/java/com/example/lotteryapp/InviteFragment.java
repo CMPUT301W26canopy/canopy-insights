@@ -42,10 +42,18 @@ public class InviteFragment extends BottomSheetDialogFragment {
     private ProfileSearchAdapter searchAdapter;
     private FirebaseFirestore db;
 
+    /**
+     * Default constructor for InviteFragment.
+     */
     public InviteFragment() {
         // Required empty public constructor
     }
 
+    /**
+     * Creates a new instance of InviteFragment for a specific event.
+     * @param eventId The unique ID of the event.
+     * @return A new instance of InviteFragment.
+     */
     public static InviteFragment newInstance(String eventId) {
         InviteFragment fragment = new InviteFragment();
         Bundle args = new Bundle();
@@ -120,6 +128,7 @@ public class InviteFragment extends BottomSheetDialogFragment {
 
     /**
      * Searches accounts by the common profile fields shown in the story.
+     * @param query The search query string.
      */
     private void performSearch(String query) {
         Task<QuerySnapshot> nameQuery = db.collection("accounts")
@@ -232,6 +241,8 @@ public class InviteFragment extends BottomSheetDialogFragment {
     /**
      * Marks users as invited participants for a private event so they can
      * accept or decline that invite from the event screen.
+     * @param selectedIds The set of user IDs to invite.
+     * @return A Task representing the asynchronous update.
      */
     private Task<Void> assignParticipantInvites(Set<String> selectedIds) {
         Map<String, Object> updates = new HashMap<>();
@@ -243,6 +254,8 @@ public class InviteFragment extends BottomSheetDialogFragment {
     /**
      * Assigns users as co-hosts and removes them from the entrant pool for the
      * same event if they were already waiting.
+     * @param selectedIds The set of user IDs to assign as co-hosts.
+     * @return A Task representing the asynchronous update.
      */
     private Task<Void> assignCoHosts(Set<String> selectedIds) {
         Map<String, Object> eventUpdates = new HashMap<>();

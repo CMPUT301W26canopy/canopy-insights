@@ -37,6 +37,11 @@ public class InboxFragment extends Fragment {
 
     public InboxFragment() {}
 
+    /**
+     * Creates a new instance of InboxFragment for a specific user.
+     * @param accountID The ID of the account to fetch notifications for.
+     * @return A new instance of InboxFragment.
+     */
     public static InboxFragment newInstance(String accountID) {
         InboxFragment fragment = new InboxFragment();
         Bundle args = new Bundle();
@@ -86,6 +91,9 @@ public class InboxFragment extends Fragment {
         }
     }
 
+    /**
+     * Fetches notification documents from Firestore for the current user and sorts them by date.
+     */
     private void fetchNotifications() {
         FirestoreHelper.getDb().collection("notifications")
                 .whereEqualTo("receiverAccountID", accountID)
@@ -121,6 +129,11 @@ public class InboxFragment extends Fragment {
                 });
     }
 
+    /**
+     * Attempts to parse a raw timestamp string into milliseconds.
+     * @param rawValue The raw timestamp string from Firestore.
+     * @return The time in milliseconds, or 0 if parsing fails.
+     */
     private long parseTimestamp(String rawValue) {
         if (rawValue == null || rawValue.trim().isEmpty()) {
             return 0L;
@@ -148,6 +161,10 @@ public class InboxFragment extends Fragment {
         return 0L;
     }
 
+    /**
+     * Displays a message when the inbox is empty or failed to load.
+     * @param message The message to display.
+     */
     private void showEmpty(String message) {
         if (!isAdded() || emptyView == null || recyclerView == null) {
             return;
@@ -158,6 +175,9 @@ public class InboxFragment extends Fragment {
         recyclerView.setVisibility(View.GONE);
     }
 
+    /**
+     * Hides the empty state and shows the notification list.
+     */
     private void showList() {
         if (!isAdded() || emptyView == null || recyclerView == null) {
             return;

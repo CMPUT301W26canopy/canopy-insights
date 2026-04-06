@@ -20,6 +20,7 @@ import java.util.List;
 
 /**
  * Shows the entrant home feed, search, and filter entry points.
+ * Handles the display of public events and allows users to search and filter them.
  */
 public class MainActivity extends AppCompatActivity {
 
@@ -68,6 +69,10 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Loads public events from Firestore and populates the master list.
+     * Triggers the initial display by calling {@link #applyFiltersAndSearch()}.
+     */
     private void loadEventsFromFirestore() {
         FirestoreHelper.getDb()
                 .collection("events")
@@ -115,6 +120,10 @@ public class MainActivity extends AppCompatActivity {
                 );
     }
 
+    /**
+     * Applies the current search query and filters to the master list of events.
+     * Updates the display list and notifies the adapter.
+     */
     private void applyFiltersAndSearch() {
         List<EventModel> result = new ArrayList<>();
         String query = currentSearchQuery.toLowerCase();
@@ -154,6 +163,9 @@ public class MainActivity extends AppCompatActivity {
         adapter.updateList(displayList);
     }
 
+    /**
+     * Sets up the search bar with a text listener to filter events in real-time.
+     */
     private void setupSearch() {
         EditText etSearch = findViewById(R.id.etSearch);
         etSearch.addTextChangedListener(new TextWatcher() {
@@ -168,6 +180,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Configures the filter button to open a bottom sheet with various filtering options.
+     */
     private void setupFilterButton() {
         ImageButton btnFilter = findViewById(R.id.btnFilter);
         btnFilter.setOnClickListener(v -> {
@@ -206,6 +221,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Wires the bottom navigation buttons to their respective activities or fragments.
+     */
     private void setupBottomNav() {
         findViewById(R.id.navHome).setOnClickListener(v -> {});
 
@@ -230,6 +248,11 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Ensures an {@link EventModel} has its core fields populated from a Firestore document.
+     * @param event The event object to populate.
+     * @param doc The source Firestore document.
+     */
     private void hydrateEvent(EventModel event, QueryDocumentSnapshot doc) {
         event.setId(doc.getId());
 
@@ -264,6 +287,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Fetches the current number of entrants on the waiting list for a specific event.
+     * @param event The event to update with the waiting count.
+     */
     private void loadWaitingCount(EventModel event) {
         if (event == null || event.getId() == null) {
             return;
@@ -279,6 +306,12 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Returns the first non-null and non-empty string between two choices.
+     * @param first The primary choice.
+     * @param second The secondary fallback.
+     * @return The resulting non-blank string, or null if both are invalid.
+     */
     private String firstNonBlank(String first, String second) {
         if (first != null && !first.trim().isEmpty()) {
             return first;
