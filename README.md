@@ -93,6 +93,7 @@ Key dependencies:
 - ZXing (QR code)
 - AndroidX RecyclerView
 - Material Components
+- Google play services (Location and map)
 
 ---
 
