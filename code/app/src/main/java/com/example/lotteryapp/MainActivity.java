@@ -21,7 +21,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private EventAdapter adapter;
-    private final List<EventModel> masterList = new ArrayList<>();
+    private final List<EventModel> masterList  = new ArrayList<>();
     private final List<EventModel> displayList = new ArrayList<>();
     private DeviceData deviceData;
 
@@ -62,11 +62,7 @@ public class MainActivity extends AppCompatActivity {
                     masterList.clear();
                     displayList.clear();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-<<<<<<< HEAD
-                        EventModel event;
-=======
                         EventModel event = null;
->>>>>>> main
                         try {
                             event = doc.toObject(EventModel.class);
                         } catch (Exception e) {
@@ -74,15 +70,6 @@ public class MainActivity extends AppCompatActivity {
                             event.setName(doc.getString("name"));
                             event.setWaitingList(new ArrayList<>());
                             String date = doc.getString("date");
-<<<<<<< HEAD
-                            String age = doc.getString("ageGroup");
-                            String loc = doc.getString("location");
-                            Long price = doc.getLong("price");
-                            Long spots = doc.getLong("totalSpots");
-                            if (date != null) event.setDate(date);
-                            if (age != null) event.setAgeGroup(age);
-                            if (loc != null) event.setLocation(loc);
-=======
                             String age  = doc.getString("ageGroup");
                             String loc  = doc.getString("location");
                             Long price  = doc.getLong("price");
@@ -90,7 +77,6 @@ public class MainActivity extends AppCompatActivity {
                             if (date  != null) event.setDate(date);
                             if (age   != null) event.setAgeGroup(age);
                             if (loc   != null) event.setLocation(loc);
->>>>>>> main
                             if (price != null) event.setPrice(price.doubleValue());
                             if (spots != null) event.setTotalSpots(spots.intValue());
                         }
@@ -111,13 +97,8 @@ public class MainActivity extends AppCompatActivity {
     private void setupSearch() {
         EditText etSearch = findViewById(R.id.etSearch);
         etSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-            }
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void afterTextChanged(Editable s) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -151,23 +132,12 @@ public class MainActivity extends AppCompatActivity {
                                     String year, String ageGroup, String country) {
                     List<EventModel> result = new ArrayList<>();
                     for (EventModel e : masterList) {
-<<<<<<< HEAD
-                        boolean priceOk = e.getPrice() >= minPrice && e.getPrice() <= maxPrice;
-                        boolean ageOk = ageGroup.equals("All Age Groups") ||
-                                (e.getAgeGroup() != null && e.getAgeGroup().contains(ageGroup));
-                        boolean locationOk = country.isEmpty() ||
-                                (e.getLocation() != null && e.getLocation().toLowerCase().contains(country.toLowerCase()));
-                        if (priceOk && ageOk && locationOk) {
-                            result.add(e);
-                        }
-=======
                         boolean priceOk    = e.getPrice() >= minPrice && e.getPrice() <= maxPrice;
                         boolean ageOk      = ageGroup.equals("All Age Groups") ||
                                 (e.getAgeGroup() != null && e.getAgeGroup().contains(ageGroup));
                         boolean locationOk = country.isEmpty() ||
                                 (e.getLocation() != null && e.getLocation().toLowerCase().contains(country.toLowerCase()));
                         if (priceOk && ageOk && locationOk) result.add(e);
->>>>>>> main
                     }
                     displayList.clear();
                     displayList.addAll(result);
@@ -195,15 +165,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.navHistory).setOnClickListener(v ->
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-                HistoryActivity.openFrom(this, deviceData.getAccountID()));
-=======
                 NavigationHelper.openHistory(this));
->>>>>>> Stashed changes
-=======
-                Toast.makeText(this, "History — coming soon", Toast.LENGTH_SHORT).show());
->>>>>>> main
 
         findViewById(R.id.navProfile).setOnClickListener(v -> {
             if (deviceData.isLoggedIn()) {

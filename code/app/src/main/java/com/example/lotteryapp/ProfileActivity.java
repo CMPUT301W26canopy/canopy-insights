@@ -116,32 +116,27 @@ public class ProfileActivity extends AppCompatActivity {
         // Inbox Button logic
         if (inboxButton != null) {
             inboxButton.setOnClickListener(v -> {
-                if (accountID != null) {
-                    // Update notificationsRead count to clear the red dot
-                    FirestoreHelper.getDb().collection("notifications").document(accountID).get()
-                            .addOnSuccessListener(documentSnapshot -> {
-                                if (documentSnapshot.exists()) {
-                                    List<Map<String, Object>> list = (List<Map<String, Object>>) documentSnapshot.get("notificationList");
-                                    int totalCount = (list != null) ? list.size() : 0;
-                                    
-                                    FirestoreHelper.getDb().collection("accounts").document(accountID)
-                                            .update("notificationsRead", totalCount)
-                                            .addOnSuccessListener(aVoid -> {
-                                                if (inboxRedDot != null) {
-                                                    inboxRedDot.setVisibility(View.GONE);
-                                                }
-                                            });
-                                }
-                            });
+                if (accountID == null) return;
 
-                    InboxFragment fragment = InboxFragment.newInstance(accountID);
-                    getSupportFragmentManager().beginTransaction()
-                            .replace(R.id.fragment_container, fragment)
-                            .addToBackStack(null)
-                            .commit();
-                } else {
-                    Toast.makeText(this, "Error: User ID not loaded", Toast.LENGTH_SHORT).show();
-                }
+                // count total notifications and mark as read
+                FirestoreHelper.getDb().collection("notifications")
+                        .whereEqualTo("receiverAccountID", accountID)
+                        .get()
+                        .addOnSuccessListener(snap -> {
+                            FirestoreHelper.getDb().collection("accounts")
+                                    .document(accountID)
+                                    .update("notificationsRead", snap.size())
+                                    .addOnSuccessListener(aVoid -> {
+                                        if (inboxRedDot != null)
+                                            inboxRedDot.setVisibility(View.GONE);
+                                    });
+                        });
+
+                InboxFragment fragment = InboxFragment.newInstance(accountID);
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, fragment)
+                        .addToBackStack(null)
+                        .commit();
             });
         }
 
@@ -356,30 +351,24 @@ public class ProfileActivity extends AppCompatActivity {
 
         FirestoreHelper.getDb().collection("accounts").document(accountID).get()
                 .addOnSuccessListener(userDoc -> {
-                    if (userDoc.exists()) {
-                        boolean enabled = userDoc.getBoolean("notificationEnabled") != null && userDoc.getBoolean("notificationEnabled");
-                        long readCount = userDoc.getLong("notificationsRead") != null ? userDoc.getLong("notificationsRead") : 0;
-
-                        if (enabled) {
-                            FirestoreHelper.getDb().collection("notifications").document(accountID).get()
-                                    .addOnSuccessListener(notifDoc -> {
-                                        if (notifDoc.exists()) {
-                                            List<Map<String, Object>> list = (List<Map<String, Object>>) notifDoc.get("notificationList");
-                                            int totalCount = (list != null) ? list.size() : 0;
-
-                                            if (readCount < totalCount) {
-                                                inboxRedDot.setVisibility(View.VISIBLE);
-                                            } else {
-                                                inboxRedDot.setVisibility(View.GONE);
-                                            }
-                                        } else {
-                                            inboxRedDot.setVisibility(View.GONE);
-                                        }
-                                    });
-                        } else {
-                            inboxRedDot.setVisibility(View.GONE);
-                        }
+                    if (!userDoc.exists()) return;
+                    Boolean enabled = userDoc.getBoolean("notificationEnabled");
+                    if (enabled == null || !enabled) {
+                        inboxRedDot.setVisibility(View.GONE);
+                        return;
                     }
+                    long readCount = userDoc.getLong("notificationsRead") != null
+                            ? userDoc.getLong("notificationsRead") : 0;
+
+                    // count from notifications collection — new structure
+                    FirestoreHelper.getDb().collection("notifications")
+                            .whereEqualTo("receiverAccountID", accountID)
+                            .get()
+                            .addOnSuccessListener(snap -> {
+                                int totalCount = snap.size();
+                                inboxRedDot.setVisibility(
+                                        readCount < totalCount ? View.VISIBLE : View.GONE);
+                            });
                 });
     }
 
@@ -396,7 +385,7 @@ public class ProfileActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.navHistory).setOnClickListener(v ->
-                Toast.makeText(this, "History — coming soon", Toast.LENGTH_SHORT).show());
+                NavigationHelper.openHistory(this));
 
         findViewById(R.id.navProfile).setOnClickListener(v -> {
             Toast.makeText(this, "Already on profile", Toast.LENGTH_SHORT).show();
