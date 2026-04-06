@@ -159,7 +159,7 @@ public class LoginFragment extends Fragment {
                             // Password matches
                             
                             // Create session
-                            deviceData.createLoginSession(userProfile.getAccountID(), userProfile.getUsername());
+                            deviceData.createLoginSession(userProfile.getAccountID(), userProfile.getUsername(), userProfile.getUserType());
 
                             // Navigate to profile activity
                             android.content.Intent intent = new android.content.Intent(getActivity(), com.example.lotteryapp.ProfileActivity.class);

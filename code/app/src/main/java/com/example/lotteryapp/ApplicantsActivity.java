@@ -18,6 +18,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -45,7 +46,7 @@ public class ApplicantsActivity extends AppCompatActivity {
     private final List<Map<String, String>> displayList    = new ArrayList<>();
     private RecyclerView.Adapter adapter;
 
-    private Button btnRunLottery, btnReplacementDraw, btnCancelNoShows, btnInvite, btnViewEvent, btnMap;
+    private Button btnRunLottery, btnReplacementDraw, btnCancelNoShows, btnInvite, btnViewEvent, btnMap, btnSendNotif, btnSignUps;
     private EditText etPrice, etDrawDate, etTotalSpots, etDescription;
     private TextView tvParticipantsLabel, tvApplicantCount, tvVisibility;
     private View participantsContainer;
@@ -81,6 +82,8 @@ public class ApplicantsActivity extends AppCompatActivity {
         btnInvite         = findViewById(R.id.btnInvite);
         btnViewEvent      = findViewById(R.id.viewEvent);
         btnMap            = findViewById(R.id.btnGeolocation);
+        btnSendNotif      = findViewById(R.id.btnSendNotif);
+        btnSignUps        = findViewById(R.id.btnSignUps);
 
 
         // populate editable fields
@@ -151,6 +154,13 @@ public class ApplicantsActivity extends AppCompatActivity {
             intent.putExtra("EVENT_ID", eventId);
             startActivity(intent);
         });
+
+        btnSendNotif.setOnClickListener(v -> {
+            SendNotificationFragment fragment = SendNotificationFragment.newInstance(eventId, eventName);
+            fragment.show(getSupportFragmentManager(), "SendNotificationFragment");
+        });
+
+        btnSignUps.setOnClickListener(v -> showDeclineInvitationDialog());
 
         // recycler
         RecyclerView recyclerView = findViewById(R.id.applicantsRecyclerView);
@@ -563,5 +573,50 @@ public class ApplicantsActivity extends AppCompatActivity {
                             Toast.LENGTH_SHORT).show();
                     loadApplicants();
                 });
+    }
+
+    private void showDeclineInvitationDialog() {
+        List<Map<String, String>> selectedApplicants = new ArrayList<>();
+        for (Map<String, String> a : applicantsList) {
+            if ("selected".equals(a.get("status"))) {
+                selectedApplicants.add(a);
+            }
+        }
+
+        if (selectedApplicants.isEmpty()) {
+            Toast.makeText(this, "No pending selected applicants to decline.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] names = new String[selectedApplicants.size()];
+        for (int i = 0; i < selectedApplicants.size(); i++) {
+            names[i] = selectedApplicants.get(i).get("userName");
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Select Applicant to Decline Invitation")
+                .setItems(names, (dialog, which) -> {
+                    Map<String, String> applicant = selectedApplicants.get(which);
+                    declineInvitation(applicant);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void declineInvitation(Map<String, String> applicant) {
+        String applicationId = applicant.get("id");
+        String userId = applicant.get("userId");
+
+        FirestoreHelper.getDb().collection("applications").document(applicationId)
+                .update("status", "cancelled")
+                .addOnSuccessListener(v -> {
+                    List<String> userIds = Collections.singletonList(userId);
+                    completeStatusUpdate(
+                            notifyCancelledUsers(userIds),
+                            "Invitation for " + applicant.get("userName") + " cancelled."
+                    );
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to decline invitation", Toast.LENGTH_SHORT).show());
     }
 }

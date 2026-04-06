@@ -101,7 +101,8 @@ public class LoginActivity extends AppCompatActivity {
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         String username = documentSnapshot.getString("username");
-                        deviceData.createLoginSession(androidId, username);
+                        String userType = documentSnapshot.getString("userType");
+                        deviceData.createLoginSession(androidId, username, userType != null ? userType : "User");
                         navigateToMain();
                     } else {
                         createDeviceAccount(androidId);
@@ -117,6 +118,8 @@ public class LoginActivity extends AppCompatActivity {
         Map<String, Object> account = new HashMap<>();
         account.put("accountID", androidId);
         account.put("username", defaultUsername);
+        account.put("name", defaultUsername);
+        account.put("userType", "User"); // default for device login
         account.put("notificationEnabled", true);
         account.put("notificationsRead", 0);
 
@@ -137,12 +140,12 @@ public class LoginActivity extends AppCompatActivity {
 
                     FirestoreHelper.getDb().collection("notifications").document(androidId).set(notifData)
                             .addOnSuccessListener(aVoidNotif -> {
-                                deviceData.createLoginSession(androidId, defaultUsername);
+                                deviceData.createLoginSession(androidId, defaultUsername, "User");
                                 navigateToMain();
                             })
                             .addOnFailureListener(e -> {
                                 // Even if notification fails, log the user in
-                                deviceData.createLoginSession(androidId, defaultUsername);
+                                deviceData.createLoginSession(androidId, defaultUsername, "User");
                                 navigateToMain();
                             });
                 })
