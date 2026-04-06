@@ -39,4 +39,33 @@ public class HistoryEntryTest {
         assertFalse(entry.canRespond());
         assertFalse(entry.hasEvent());
     }
+
+    @Test
+    public void setStatus_null_resetsToWaiting() {
+        HistoryEntry entry = new HistoryEntry("app-4", "event-4", "accepted");
+        entry.setStatus(null);
+        assertEquals("waiting", entry.getStatus());
+    }
+
+    @Test
+    public void nonSelectedStatus_cannotRespond() {
+        HistoryEntry entry = new HistoryEntry("app-5", "event-5", "accepted");
+        assertFalse(entry.canRespond());
+    }
+
+    @Test
+    public void constructor_keepsApplicationAndEventIds() {
+        HistoryEntry entry = new HistoryEntry("app-6", "event-6", "waiting");
+        assertEquals("app-6", entry.getApplicationId());
+        assertEquals("event-6", entry.getEventId());
+    }
+
+    @Test
+    public void defaultDisplayValues_areInitialized() {
+        HistoryEntry entry = new HistoryEntry("app-7", "event-7", "waiting");
+        assertEquals("Event unavailable", entry.getEventName());
+        assertEquals("", entry.getEventDate());
+        assertEquals("", entry.getEventLocation());
+        assertFalse(entry.isUpdating());
+    }
 }
