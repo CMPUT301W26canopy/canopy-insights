@@ -52,6 +52,39 @@
             android:padding="8dp"
             android:layout_marginBottom="12dp" />
 
+        <!-- min spots -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Min Spots"
+            android:textSize="14sp"
+            android:textColor="#000000" />
+
+        <EditText
+            android:id="@+id/etMinSpots"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:hint="0"
+            android:inputType="number"
+            android:padding="8dp"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Max Spots"
+            android:textSize="14sp"
+            android:textColor="#000000" />
+
+        <EditText
+            android:id="@+id/etMaxSpots"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:hint="1000"
+            android:inputType="number"
+            android:padding="8dp"
+            android:layout_marginBottom="12dp" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

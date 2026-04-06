@@ -141,16 +141,30 @@ public class MainActivity extends AppCompatActivity {
             FilterBottomSheet sheet = new FilterBottomSheet();
             sheet.setFilterCallback(new FilterBottomSheet.FilterCallback() {
                 @Override
-                public void onApply(double minPrice, double maxPrice, String month,
-                                    String year, String ageGroup, String country) {
+                public void onApply(double minPrice, double maxPrice, int minSpots, int maxSpots,
+                                    String month, String year, String ageGroup, String country) {
                     List<EventModel> result = new ArrayList<>();
                     for (EventModel e : masterList) {
                         boolean priceOk    = e.getPrice() >= minPrice && e.getPrice() <= maxPrice;
+                        boolean spotsOk    = e.getTotalSpots() >= minSpots && e.getTotalSpots() <= maxSpots;
                         boolean ageOk      = ageGroup.equals("All Age Groups") ||
                                 (e.getAgeGroup() != null && e.getAgeGroup().contains(ageGroup));
                         boolean locationOk = country.isEmpty() ||
                                 (e.getLocation() != null && e.getLocation().toLowerCase().contains(country.toLowerCase()));
-                        if (priceOk && ageOk && locationOk) result.add(e);
+
+                        // Simple date check if Month/Year are not "Any"
+                        boolean dateOk = true;
+                        if (!month.equals("Any") || !year.equals("Any")) {
+                            String eventDate = e.getDate(); // Expecting something like "Jan 15, 2025"
+                            if (eventDate != null) {
+                                if (!month.equals("Any") && !eventDate.contains(month)) dateOk = false;
+                                if (!year.equals("Any") && !eventDate.contains(year)) dateOk = false;
+                            } else {
+                                dateOk = false;
+                            }
+                        }
+
+                        if (priceOk && spotsOk && ageOk && locationOk && dateOk) result.add(e);
                     }
                     displayList.clear();
                     displayList.addAll(result);

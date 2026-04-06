@@ -21,8 +21,8 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 public class FilterBottomSheet extends BottomSheetDialogFragment {
 
     public interface FilterCallback {
-        void onApply(double minPrice, double maxPrice, String month,
-                     String year, String ageGroup, String country);
+        void onApply(double minPrice, double maxPrice, int minSpots, int maxSpots,
+                     String month, String year, String ageGroup, String country);
         void onReset();
     }
 
@@ -43,6 +43,8 @@ public class FilterBottomSheet extends BottomSheetDialogFragment {
 
         EditText etMinPrice = view.findViewById(R.id.etMinPrice);
         EditText etMaxPrice = view.findViewById(R.id.etMaxPrice);
+        EditText etMinSpots = view.findViewById(R.id.etMinSpots);
+        EditText etMaxSpots = view.findViewById(R.id.etMaxSpots);
         Spinner spinnerMonth = view.findViewById(R.id.spinnerMonth);
         String[] months = {"Any", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -67,12 +69,18 @@ public class FilterBottomSheet extends BottomSheetDialogFragment {
         Button btnApply = view.findViewById(R.id.btnApply);
         btnApply.setOnClickListener(v -> {
             if (callback != null) {
-                String minStr = etMinPrice.getText().toString();
-                String maxStr = etMaxPrice.getText().toString();
-                double min = minStr.isEmpty() ? 0 : Double.parseDouble(minStr);
-                double max = maxStr.isEmpty() ? 9999 : Double.parseDouble(maxStr);
+                String minPriceStr = etMinPrice.getText().toString();
+                String maxPriceStr = etMaxPrice.getText().toString();
+                double minPrice = minPriceStr.isEmpty() ? 0 : Double.parseDouble(minPriceStr);
+                double maxPrice = maxPriceStr.isEmpty() ? 9999 : Double.parseDouble(maxPriceStr);
+
+                String minSpotsStr = etMinSpots.getText().toString();
+                String maxSpotsStr = etMaxSpots.getText().toString();
+                int minSpots = minSpotsStr.isEmpty() ? 0 : Integer.parseInt(minSpotsStr);
+                int maxSpots = maxSpotsStr.isEmpty() ? 999999 : Integer.parseInt(maxSpotsStr);
+
                 callback.onApply(
-                        min, max,
+                        minPrice, maxPrice, minSpots, maxSpots,
                         spinnerMonth.getSelectedItem().toString(),
                         spinnerYear.getSelectedItem().toString(),
                         spinnerAge.getSelectedItem().toString(),
