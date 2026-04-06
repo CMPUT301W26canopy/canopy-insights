@@ -7,11 +7,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 
 import com.example.lotteryapp.ui.login.LoginFragment;
 import com.example.lotteryapp.ui.login.SignUpFragment;
@@ -43,23 +41,29 @@ public class LoginActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
 
         loginToggleBtn = findViewById(R.id.login_toggle_btn);
-        loginToggleBtn.setOnClickListener(v -> {
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            fragmentManager.beginTransaction()
-                    .replace(R.id.fragmentContainerView, LoginFragment.class, null)
-                    .setReorderingAllowed(true)
-                    .addToBackStack(null)
-                    .commit();
+        loginToggleBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FragmentManager fragmentManager = getSupportFragmentManager();
+                fragmentManager.beginTransaction()
+                        .replace(R.id.fragmentContainerView, LoginFragment.class, null)
+                        .setReorderingAllowed(true)
+                        .addToBackStack(null)
+                        .commit();
+            }
         });
 
         signUpToggleBtn = findViewById(R.id.sign_up_toggle_btn);
-        signUpToggleBtn.setOnClickListener(v -> {
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            fragmentManager.beginTransaction()
-                    .replace(R.id.fragmentContainerView, SignUpFragment.class, null)
-                    .setReorderingAllowed(true)
-                    .addToBackStack(null)
-                    .commit();
+        signUpToggleBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FragmentManager fragmentManager = getSupportFragmentManager();
+                fragmentManager.beginTransaction()
+                        .replace(R.id.fragmentContainerView, SignUpFragment.class, null)
+                        .setReorderingAllowed(true)
+                        .addToBackStack(null)
+                        .commit();
+            }
         });
 
         loginDeviceBtn = findViewById(R.id.login_device_btn);
@@ -149,10 +153,11 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.navHistory).setOnClickListener(v ->
-                Toast.makeText(this, "History — coming soon", Toast.LENGTH_SHORT).show());
+                NavigationHelper.openHistory(this));
 
-        findViewById(R.id.navProfile).setOnClickListener(v -> {
-            // Handled by Activity logic
+        findViewById(R.id.navProfile).setOnClickListener(v ->{
+            //ProfileActivity
+            // Toast.makeText(this, "Profile — coming soon", Toast.LENGTH_SHORT).show()
         });
     }
 }
