@@ -20,6 +20,15 @@ public class NotificationHelper {
 
     private NotificationHelper() {}
 
+    /**
+     * Sends notifications to a list of receiver account IDs.
+     * Checks each recipient's preferences before writing the notification to Firestore.
+     * @param senderAccountID The ID of the account sending the notification.
+     * @param receiverIds The list of account IDs to receive the notification.
+     * @param message The content of the notification.
+     * @param eventId The optional ID of the related event.
+     * @return A {@link Task} that completes when all notifications have been processed.
+     */
     public static Task<Void> sendNotifications(String senderAccountID,
                                                List<String> receiverIds,
                                                String message,
@@ -80,6 +89,14 @@ public class NotificationHelper {
         return Tasks.whenAll(tasks);
     }
 
+    /**
+     * Sends a standard notification to users who remain on the waiting list.
+     * @param organizerId The ID of the organizer.
+     * @param eventId The ID of the event.
+     * @param eventName The name of the event.
+     * @param userIds The list of user IDs to notify.
+     * @return A {@link Task} for the asynchronous operation.
+     */
     public static Task<Void> notifyWaitingList(String organizerId, String eventId,
                                                String eventName, List<String> userIds) {
         return sendNotifications(organizerId, userIds,
@@ -87,6 +104,14 @@ public class NotificationHelper {
                         " this round. You are still on the waiting list.", eventId);
     }
 
+    /**
+     * Sends a notification to users who have been selected in the lottery.
+     * @param organizerId The ID of the organizer.
+     * @param eventId The ID of the event.
+     * @param eventName The name of the event.
+     * @param userIds The list of user IDs to notify.
+     * @return A {@link Task} for the asynchronous operation.
+     */
     public static Task<Void> notifySelected(String organizerId, String eventId,
                                             String eventName, List<String> userIds) {
         return sendNotifications(organizerId, userIds,
@@ -94,16 +119,38 @@ public class NotificationHelper {
                         ". Open the event to accept or decline.", eventId);
     }
 
+    /**
+     * Sends a notification to users whose invitation has been cancelled.
+     * @param organizerId The ID of the organizer.
+     * @param eventId The ID of the event.
+     * @param eventName The name of the event.
+     * @param userIds The list of user IDs to notify.
+     * @return A {@link Task} for the asynchronous operation.
+     */
     public static Task<Void> notifyCancelled(String organizerId, String eventId,
                                              String eventName, List<String> userIds) {
         return sendNotifications(organizerId, userIds,
                 "Your invitation for " + eventName + " has been cancelled.", eventId);
     }
 
+    /**
+     * Sends a custom notification with a user-provided message.
+     * @param senderId The ID of the sender.
+     * @param eventId The ID of the event.
+     * @param eventName The name of the event.
+     * @param userIds The list of user IDs to notify.
+     * @param message The custom message content.
+     * @return A {@link Task} for the asynchronous operation.
+     */
     public static Task<Void> sendCustomNotification(String senderId, String eventId, String eventName, List<String> userIds, String message) {
         return sendNotifications(senderId, userIds, "[" + eventName + "] " + message, eventId);
     }
 
+    /**
+     * Cleans and deduplicates a list of receiver account IDs.
+     * @param receiverIds The raw list of receiver IDs.
+     * @return A list of unique, non-empty, and trimmed receiver IDs.
+     */
     private static List<String> normalizeReceiverIds(List<String> receiverIds) {
         if (receiverIds == null || receiverIds.isEmpty()) {
             return new ArrayList<>();

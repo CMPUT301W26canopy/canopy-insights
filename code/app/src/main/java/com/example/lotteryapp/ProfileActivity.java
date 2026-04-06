@@ -148,6 +148,9 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Refreshes the unread notification status when the activity comes to the foreground.
+     */
     @Override
     protected void onResume() {
         super.onResume();
@@ -159,6 +162,7 @@ public class ProfileActivity extends AppCompatActivity {
     /**
      * Reads a chosen image, crops it into a square avatar, and keeps the new
      * value in memory until the user saves the profile.
+     * @param uri The URI of the selected image.
      */
     private void handleProfileImageSelection(Uri uri) {
         if (uri == null) {
@@ -210,6 +214,9 @@ public class ProfileActivity extends AppCompatActivity {
                 .commit();
     }
 
+    /**
+     * Permanently deletes the current user's profile from Firestore and logs them out.
+     */
     private void deleteProfile() {
         if (accountID == null || isFinishing()) {
             return;
@@ -237,6 +244,9 @@ public class ProfileActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Discards any unsaved changes and reverts input fields to their original values.
+     */
     private void revertChanges() {
         if (usernameInput == null || nameInput == null || emailInput == null || phoneInput == null || notificationsSwitch == null) {
             return;
@@ -308,6 +318,9 @@ public class ProfileActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Sets up text watchers for all input fields to detect changes in real-time.
+     */
     private void setupTextWatchers() {
         TextWatcher watcher = new TextWatcher() {
             @Override
@@ -330,6 +343,9 @@ public class ProfileActivity extends AppCompatActivity {
         if (phoneInput != null) phoneInput.addTextChangedListener(watcher);
     }
 
+    /**
+     * Compares the current input values with the original data to enable or disable the Update button.
+     */
     private void checkForChanges() {
         if (usernameInput == null || nameInput == null || emailInput == null || phoneInput == null
                 || notificationsSwitch == null || updateButton == null) {
@@ -358,6 +374,10 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Loads user profile data from Firestore and populates the UI.
+     * @param accountID The ID of the account to load.
+     */
     private void loadProfileData(String accountID) {
         if (isFinishing()) {
             return;
@@ -409,6 +429,10 @@ public class ProfileActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Decodes a base64 profile image string and binds it to the profile ImageView.
+     * @param profileImage The base64 encoded image string.
+     */
     private void bindProfileImage(String profileImage) {
         if (profileImageView == null) {
             return;
@@ -427,6 +451,9 @@ public class ProfileActivity extends AppCompatActivity {
         profileImageView.setImageResource(R.drawable.ic_person);
     }
 
+    /**
+     * Checks for unread notifications in Firestore and toggles the red dot visibility.
+     */
     private void checkUnreadNotifications() {
         if (accountID == null || inboxRedDot == null) {
             return;
@@ -479,6 +506,9 @@ public class ProfileActivity extends AppCompatActivity {
                 Toast.makeText(this, "Already on profile", Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * Checks if the user has admin privileges based on their username and updates the UI.
+     */
     private void checkAdminStatus() {
         if (btnAdmin == null) {
             return;
@@ -488,6 +518,12 @@ public class ProfileActivity extends AppCompatActivity {
         btnAdmin.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
     }
 
+    /**
+     * Reads all bytes from an input stream into a byte array.
+     * @param inputStream The input stream to read from.
+     * @return The resulting byte array.
+     * @throws IOException If an I/O error occurs.
+     */
     private byte[] readBytes(InputStream inputStream) throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         byte[] buffer = new byte[8192];
@@ -498,6 +534,11 @@ public class ProfileActivity extends AppCompatActivity {
         return outputStream.toByteArray();
     }
 
+    /**
+     * Crops a bitmap to a square aspect ratio.
+     * @param bitmap The bitmap to crop.
+     * @return The resulting square bitmap.
+     */
     private Bitmap cropToSquare(Bitmap bitmap) {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
@@ -507,12 +548,22 @@ public class ProfileActivity extends AppCompatActivity {
         return Bitmap.createBitmap(bitmap, left, top, size, size);
     }
 
+    /**
+     * Encodes a bitmap into a base64 string.
+     * @param bitmap The bitmap to encode.
+     * @return The base64 encoded string.
+     */
     private String encodeBitmap(Bitmap bitmap) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 82, outputStream);
         return Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP);
     }
 
+    /**
+     * Returns the original string or an empty string if null.
+     * @param value The candidate string.
+     * @return The resulting string.
+     */
     private String safe(String value) {
         return value == null ? "" : value;
     }
