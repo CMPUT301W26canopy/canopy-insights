@@ -28,6 +28,17 @@ public class MainActivity extends AppCompatActivity {
     private final List<EventModel> displayList = new ArrayList<>();
     private DeviceData deviceData;
 
+    // Filter and Search State
+    private String currentSearchQuery = "";
+    private double minPrice = 0;
+    private double maxPrice = 9999;
+    private int minSpots = 0;
+    private int maxSpots = 999999;
+    private String filterMonth = "Any";
+    private String filterYear = "Any";
+    private String filterAgeGroup = "All Age Groups";
+    private String filterCountry = "";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     masterList.clear();
-                    displayList.clear();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         String visibility = doc.getString("visibility");
                         if ("Private".equalsIgnoreCase(visibility)) {
@@ -93,17 +103,55 @@ public class MainActivity extends AppCompatActivity {
                             hydrateEvent(event, doc);
                             if (!"Private".equalsIgnoreCase(event.getVisibility())) {
                                 masterList.add(event);
-                                displayList.add(event);
                                 loadWaitingCount(event);
                             }
                         }
                     }
-                    adapter.updateList(displayList);
+                    applyFiltersAndSearch();
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to load events: " + e.getMessage(),
                                 Toast.LENGTH_SHORT).show()
                 );
+    }
+
+    private void applyFiltersAndSearch() {
+        List<EventModel> result = new ArrayList<>();
+        String query = currentSearchQuery.toLowerCase();
+
+        for (EventModel e : masterList) {
+            // Keyword Search check
+            boolean matchesSearch = query.isEmpty() ||
+                    (e.getName() != null && e.getName().toLowerCase().contains(query)) ||
+                    (e.getLocation() != null && e.getLocation().toLowerCase().contains(query));
+
+            // Filter checks
+            boolean priceOk    = e.getPrice() >= minPrice && e.getPrice() <= maxPrice;
+            boolean spotsOk    = e.getTotalSpots() >= minSpots && e.getTotalSpots() <= maxSpots;
+            boolean ageOk      = filterAgeGroup.equals("All Age Groups") ||
+                    (e.getAgeGroup() != null && e.getAgeGroup().contains(filterAgeGroup));
+            boolean locationOk = filterCountry.isEmpty() ||
+                    (e.getLocation() != null && e.getLocation().toLowerCase().contains(filterCountry.toLowerCase()));
+
+            boolean dateOk = true;
+            if (!filterMonth.equals("Any") || !filterYear.equals("Any")) {
+                String eventDate = e.getDate();
+                if (eventDate != null) {
+                    if (!filterMonth.equals("Any") && !eventDate.contains(filterMonth)) dateOk = false;
+                    if (!filterYear.equals("Any") && !eventDate.contains(filterYear)) dateOk = false;
+                } else {
+                    dateOk = false;
+                }
+            }
+
+            if (matchesSearch && priceOk && spotsOk && ageOk && locationOk && dateOk) {
+                result.add(e);
+            }
+        }
+
+        displayList.clear();
+        displayList.addAll(result);
+        adapter.updateList(displayList);
     }
 
     private void setupSearch() {
@@ -114,23 +162,8 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String query = s.toString().trim().toLowerCase();
-                if (query.isEmpty()) {
-                    displayList.clear();
-                    displayList.addAll(masterList);
-                } else {
-                    List<EventModel> result = new ArrayList<>();
-                    for (EventModel e : masterList) {
-                        String name = e.getName() != null ? e.getName().toLowerCase() : "";
-                        String location = e.getLocation() != null ? e.getLocation().toLowerCase() : "";
-                        if (name.contains(query) || location.contains(query)) {
-                            result.add(e);
-                        }
-                    }
-                    displayList.clear();
-                    displayList.addAll(result);
-                }
-                adapter.updateList(displayList);
+                currentSearchQuery = s.toString().trim();
+                applyFiltersAndSearch();
             }
         });
     }
@@ -141,41 +174,32 @@ public class MainActivity extends AppCompatActivity {
             FilterBottomSheet sheet = new FilterBottomSheet();
             sheet.setFilterCallback(new FilterBottomSheet.FilterCallback() {
                 @Override
-                public void onApply(double minPrice, double maxPrice, int minSpots, int maxSpots,
-                                    String month, String year, String ageGroup, String country) {
-                    List<EventModel> result = new ArrayList<>();
-                    for (EventModel e : masterList) {
-                        boolean priceOk    = e.getPrice() >= minPrice && e.getPrice() <= maxPrice;
-                        boolean spotsOk    = e.getTotalSpots() >= minSpots && e.getTotalSpots() <= maxSpots;
-                        boolean ageOk      = ageGroup.equals("All Age Groups") ||
-                                (e.getAgeGroup() != null && e.getAgeGroup().contains(ageGroup));
-                        boolean locationOk = country.isEmpty() ||
-                                (e.getLocation() != null && e.getLocation().toLowerCase().contains(country.toLowerCase()));
+                public void onApply(double minP, double maxP, int minS, int maxS,
+                                    String month, String year, String age, String country) {
+                    minPrice = minP;
+                    maxPrice = maxP;
+                    minSpots = minS;
+                    maxSpots = maxS;
+                    filterMonth = month;
+                    filterYear = year;
+                    filterAgeGroup = age;
+                    filterCountry = country;
 
-                        // Simple date check if Month/Year are not "Any"
-                        boolean dateOk = true;
-                        if (!month.equals("Any") || !year.equals("Any")) {
-                            String eventDate = e.getDate(); // Expecting something like "Jan 15, 2025"
-                            if (eventDate != null) {
-                                if (!month.equals("Any") && !eventDate.contains(month)) dateOk = false;
-                                if (!year.equals("Any") && !eventDate.contains(year)) dateOk = false;
-                            } else {
-                                dateOk = false;
-                            }
-                        }
-
-                        if (priceOk && spotsOk && ageOk && locationOk && dateOk) result.add(e);
-                    }
-                    displayList.clear();
-                    displayList.addAll(result);
-                    adapter.updateList(displayList);
+                    applyFiltersAndSearch();
                 }
 
                 @Override
                 public void onReset() {
-                    displayList.clear();
-                    displayList.addAll(masterList);
-                    adapter.updateList(displayList);
+                    minPrice = 0;
+                    maxPrice = 9999;
+                    minSpots = 0;
+                    maxSpots = 999999;
+                    filterMonth = "Any";
+                    filterYear = "Any";
+                    filterAgeGroup = "All Age Groups";
+                    filterCountry = "";
+
+                    applyFiltersAndSearch();
                 }
             });
             sheet.show(getSupportFragmentManager(), "filter");
@@ -251,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     event.setWaitingCount(snapshot.size());
-                    adapter.updateList(displayList);
+                    applyFiltersAndSearch();
                 });
     }
 
