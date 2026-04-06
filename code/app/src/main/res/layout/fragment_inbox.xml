@@ -2,34 +2,15 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-    android:orientation="horizontal">
-=======
-    android:layout_marginStart="16dp"
-    android:layout_marginTop="8dp"
-    android:layout_marginEnd="16dp"
-    android:layout_marginBottom="8dp"
-    android:background="@drawable/bg_history_card"
     android:orientation="vertical"
     android:padding="16dp">
->>>>>>> Stashed changes
-=======
-    android:orientation="vertical"
-    android:padding="16dp">
->>>>>>> main
 
     <TextView
         android:id="@+id/item_number"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-        android:layout_margin="@dimen/text_margin"
-=======
         android:textStyle="bold"
         android:textColor="@color/black"
->>>>>>> main
         android:textAppearance="?attr/textAppearanceListItem" />
 
     <TextView
@@ -44,47 +25,6 @@
         android:id="@+id/btn_view_event"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-<<<<<<< HEAD
-        android:layout_margin="@dimen/text_margin"
-        android:textAppearance="?attr/textAppearanceListItem" />
-</LinearLayout>
-=======
-        android:textColor="@color/black"
-        android:textSize="15sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/content"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:textColor="#5F586A"
-        android:textSize="13sp" />
-
-    <TextView
-        android:id="@+id/timestamp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textColor="#8A8396"
-        android:textSize="12sp" />
-
-    <Button
-        android:id="@+id/btn_view_event"
-        android:layout_width="110dp"
-        android:layout_height="42dp"
-        android:layout_gravity="end"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/bg_history_view_button"
-        android:text="View Event"
-        android:textAllCaps="false"
-        android:textColor="@android:color/white"
-        android:textStyle="bold"
-        android:visibility="gone" />
-
-</LinearLayout>
->>>>>>> Stashed changes
-=======
         android:layout_marginTop="8dp"
         android:text="View Event"
         android:visibility="gone"
@@ -92,4 +32,3 @@
         android:textColor="#6B5FA6" />
 
 </LinearLayout>
->>>>>>> main

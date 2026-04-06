@@ -7,9 +7,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 public class NotificationHelper {
 
@@ -19,16 +21,17 @@ public class NotificationHelper {
                                                List<String> receiverIds,
                                                String message,
                                                String eventId) {
-        if (receiverIds == null || receiverIds.isEmpty()) {
+        List<String> normalizedReceiverIds = normalizeReceiverIds(receiverIds);
+        if (normalizedReceiverIds.isEmpty()) {
             return Tasks.forResult(null);
         }
 
-        String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+        String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                 .format(new Date());
 
         List<Task<Void>> tasks = new ArrayList<>();
 
-        for (String receiverId : receiverIds) {
+        for (String receiverId : normalizedReceiverIds) {
             Task<Void> task = FirestoreHelper.getDb()
                     .collection("accounts")
                     .document(receiverId)
@@ -77,19 +80,39 @@ public class NotificationHelper {
     public static Task<Void> notifyWaitingList(String organizerId, String eventId,
                                                String eventName, List<String> userIds) {
         return sendNotifications(organizerId, userIds,
-                "Update about " + eventName + ". Check the app for details.", eventId);
+                "You were not selected for " + eventName +
+                        " this round. You are still on the waiting list.", eventId);
     }
 
     public static Task<Void> notifySelected(String organizerId, String eventId,
                                             String eventName, List<String> userIds) {
         return sendNotifications(organizerId, userIds,
                 "You have been selected for " + eventName +
-                        ". Accept or decline in your history.", eventId);
+                        ". Open the event to accept or decline.", eventId);
     }
 
     public static Task<Void> notifyCancelled(String organizerId, String eventId,
                                              String eventName, List<String> userIds) {
         return sendNotifications(organizerId, userIds,
                 "Your invitation for " + eventName + " has been cancelled.", eventId);
+    }
+
+    private static List<String> normalizeReceiverIds(List<String> receiverIds) {
+        if (receiverIds == null || receiverIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Set<String> uniqueIds = new LinkedHashSet<>();
+        for (String receiverId : receiverIds) {
+            if (receiverId == null) {
+                continue;
+            }
+
+            String trimmed = receiverId.trim();
+            if (!trimmed.isEmpty()) {
+                uniqueIds.add(trimmed);
+            }
+        }
+        return new ArrayList<>(uniqueIds);
     }
 }

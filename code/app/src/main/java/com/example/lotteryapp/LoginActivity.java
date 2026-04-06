@@ -7,9 +7,11 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.example.lotteryapp.ui.login.LoginFragment;
 import com.example.lotteryapp.ui.login.SignUpFragment;
@@ -40,6 +42,8 @@ public class LoginActivity extends AppCompatActivity {
         ImageButton btnBack = findViewById(R.id.back_btn_top);
         btnBack.setOnClickListener(v -> finish());
 
+        // Set up fragment buttons
+
         loginToggleBtn = findViewById(R.id.login_toggle_btn);
         loginToggleBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -49,11 +53,17 @@ public class LoginActivity extends AppCompatActivity {
                         .replace(R.id.fragmentContainerView, LoginFragment.class, null)
                         .setReorderingAllowed(true)
                         .addToBackStack(null)
-                        .commit();
+                        .commit()
+
+                ;
+
+
             }
+
         });
 
         signUpToggleBtn = findViewById(R.id.sign_up_toggle_btn);
+
         signUpToggleBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -62,8 +72,13 @@ public class LoginActivity extends AppCompatActivity {
                         .replace(R.id.fragmentContainerView, SignUpFragment.class, null)
                         .setReorderingAllowed(true)
                         .addToBackStack(null)
-                        .commit();
+                        .commit()
+
+                ;
+
+
             }
+
         });
 
         loginDeviceBtn = findViewById(R.id.login_device_btn);
@@ -72,6 +87,7 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         setupBottomNav();
+
     }
 
     private void loginWithDevice() {
@@ -144,9 +160,11 @@ public class LoginActivity extends AppCompatActivity {
         findViewById(R.id.navHome).setOnClickListener(v -> {
             Intent intent = new Intent(LoginActivity.this, MainActivity.class);
             startActivity(intent);
+
+
         });
 
-        findViewById(R.id.navCreate).setOnClickListener(v -> {
+        findViewById(R.id.navCreate).setOnClickListener(v ->{
             Log.d("DEBUG", "navCreate clicked");
             Intent intent = new Intent(LoginActivity.this, OrganizerActivity.class);
             startActivity(intent);
@@ -160,4 +178,6 @@ public class LoginActivity extends AppCompatActivity {
             // Toast.makeText(this, "Profile — coming soon", Toast.LENGTH_SHORT).show()
         });
     }
+
+
 }
