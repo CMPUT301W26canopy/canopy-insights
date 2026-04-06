@@ -22,24 +22,10 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
-<<<<<<< HEAD
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-=======
-import com.google.firebase.firestore.SetOptions;
-import com.google.firebase.firestore.WriteBatch;
-
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
->>>>>>> main
 import java.util.Set;
 
 /**
@@ -125,13 +111,7 @@ public class InviteFragment extends BottomSheetDialogFragment {
             }
         });
 
-<<<<<<< HEAD
         view.findViewById(R.id.btn_confirm_invite).setOnClickListener(v -> sendInvites());
-=======
-        view.findViewById(R.id.btn_confirm_invite).setOnClickListener(v -> {
-            sendInvites();
-        });
->>>>>>> main
     }
 
     private void performSearch(String query) {
@@ -191,7 +171,6 @@ public class InviteFragment extends BottomSheetDialogFragment {
             return;
         }
 
-<<<<<<< HEAD
         Button hostOrParticipantBtn = getView() != null
                 ? getView().findViewById(R.id.hostOrParticipant)
                 : null;
@@ -234,46 +213,5 @@ public class InviteFragment extends BottomSheetDialogFragment {
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
-=======
-        Button hostOrParticipantBtn = getView().findViewById(R.id.hostOrParticipant);
-        String role = (hostOrParticipantBtn != null) ? hostOrParticipantBtn.getText().toString() : "Participant";
-        String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
-
-        WriteBatch batch = db.batch();
-        
-        // If inviting as Co-host, add them to the invitedHosts list in the event document
-        if (role.equalsIgnoreCase("Co-host") && eventId != null) {
-            batch.update(db.collection("events").document(eventId), 
-                    "invitedHosts", FieldValue.arrayUnion(selectedIds.toArray()));
-        }
-
-        for (String receiverId : selectedIds) {
-            // Create the notification map to store in the array
-            Map<String, Object> notificationMap = new HashMap<>();
-            notificationMap.put("senderAccountID", senderId);
-            notificationMap.put("receiverAccountID", receiverId);
-            notificationMap.put("message", "Invitation: You have been invited as a " + role + " to join an event!");
-            notificationMap.put("timestamp", timestamp);
-            notificationMap.put("eventID", eventId);
-
-            // Use set with SetOptions.merge() so the document is created if it doesn't exist,
-            // and arrayUnion to add to the existing notificationList.
-            Map<String, Object> updateData = new HashMap<>();
-            updateData.put("notificationList", FieldValue.arrayUnion(notificationMap));
-            
-            batch.set(db.collection("notifications").document(receiverId), updateData, SetOptions.merge());
-        }
-
-        batch.commit().addOnSuccessListener(aVoid -> {
-            if (isAdded()) {
-                Toast.makeText(getContext(), "Invites sent successfully!", Toast.LENGTH_SHORT).show();
-                dismiss();
-            }
-        }).addOnFailureListener(e -> {
-            if (isAdded()) {
-                Toast.makeText(getContext(), "Failed to send invites: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
->>>>>>> main
     }
 }

@@ -22,6 +22,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.WriteBatch;
@@ -285,14 +287,25 @@ public class ApplicantsActivity extends AppCompatActivity {
         Collections.shuffle(waiting);
         int spotsToFill = Math.min(spots, waiting.size());
         WriteBatch batch = FirestoreHelper.getDb().batch();
+        List<String> selectedUserIds = new ArrayList<>();
+        List<String> remainingWaitingUserIds = new ArrayList<>();
         for (int i = 0; i < spotsToFill; i++) {
+            selectedUserIds.add(waiting.get(i).get("userId"));
             batch.update(FirestoreHelper.getDb().collection("applications")
                     .document(waiting.get(i).get("id")), "status", "selected");
         }
+        for (int i = spotsToFill; i < waiting.size(); i++) {
+            remainingWaitingUserIds.add(waiting.get(i).get("userId"));
+        }
         batch.commit()
                 .addOnSuccessListener(v -> {
-                    Toast.makeText(this, spotsToFill + " selected!", Toast.LENGTH_SHORT).show();
-                    loadApplicants();
+                    completeStatusUpdate(
+                            Tasks.whenAll(
+                                    notifySelectedUsers(selectedUserIds),
+                                    notifyWaitingUsers(remainingWaitingUserIds)
+                            ),
+                            spotsToFill + " selected!"
+                    );
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Lottery failed", Toast.LENGTH_SHORT).show());
@@ -321,14 +334,25 @@ public class ApplicantsActivity extends AppCompatActivity {
         Collections.shuffle(waiting);
         int replacements = Math.min(spotsLeft, waiting.size());
         WriteBatch batch = FirestoreHelper.getDb().batch();
+        List<String> selectedUserIds = new ArrayList<>();
+        List<String> remainingWaitingUserIds = new ArrayList<>();
         for (int i = 0; i < replacements; i++) {
+            selectedUserIds.add(waiting.get(i).get("userId"));
             batch.update(FirestoreHelper.getDb().collection("applications")
                     .document(waiting.get(i).get("id")), "status", "selected");
         }
+        for (int i = replacements; i < waiting.size(); i++) {
+            remainingWaitingUserIds.add(waiting.get(i).get("userId"));
+        }
         batch.commit()
                 .addOnSuccessListener(v -> {
-                    Toast.makeText(this, replacements + " replacements selected!", Toast.LENGTH_SHORT).show();
-                    loadApplicants();
+                    completeStatusUpdate(
+                            Tasks.whenAll(
+                                    notifySelectedUsers(selectedUserIds),
+                                    notifyWaitingUsers(remainingWaitingUserIds)
+                            ),
+                            replacements + " replacements selected!"
+                    );
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Replacement draw failed", Toast.LENGTH_SHORT).show());
@@ -344,14 +368,19 @@ public class ApplicantsActivity extends AppCompatActivity {
             return;
         }
         WriteBatch batch = FirestoreHelper.getDb().batch();
-        for (Map<String, String> a : noShows)
+        List<String> cancelledUserIds = new ArrayList<>();
+        for (Map<String, String> a : noShows) {
+            cancelledUserIds.add(a.get("userId"));
             batch.update(FirestoreHelper.getDb().collection("applications")
                     .document(a.get("id")), "status", "cancelled");
+        }
 
         batch.commit()
                 .addOnSuccessListener(v -> {
-                    Toast.makeText(this, noShows.size() + " cancelled", Toast.LENGTH_SHORT).show();
-                    loadApplicants();
+                    completeStatusUpdate(
+                            notifyCancelledUsers(cancelledUserIds),
+                            noShows.size() + " cancelled"
+                    );
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to cancel", Toast.LENGTH_SHORT).show());
@@ -468,5 +497,71 @@ public class ApplicantsActivity extends AppCompatActivity {
             Log.e("CSV_EXPORT", "Error saving CSV", e);
             Toast.makeText(this, "Failed to save CSV file", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private Task<Void> notifySelectedUsers(List<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Tasks.forResult(null);
+        }
+
+        return NotificationHelper.notifySelected(
+                getNotificationSenderId(),
+                eventId,
+                getNotificationEventName(),
+                userIds
+        );
+    }
+
+    private Task<Void> notifyCancelledUsers(List<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Tasks.forResult(null);
+        }
+
+        return NotificationHelper.notifyCancelled(
+                getNotificationSenderId(),
+                eventId,
+                getNotificationEventName(),
+                userIds
+        );
+    }
+
+    private Task<Void> notifyWaitingUsers(List<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Tasks.forResult(null);
+        }
+
+        return NotificationHelper.notifyWaitingList(
+                getNotificationSenderId(),
+                eventId,
+                getNotificationEventName(),
+                userIds
+        );
+    }
+
+    private String getNotificationSenderId() {
+        String organizerId = DeviceData.getInstance(this).getAccountID();
+        return organizerId != null && !organizerId.isEmpty()
+                ? organizerId
+                : "SYSTEM_DEFAULT";
+    }
+
+    private String getNotificationEventName() {
+        return eventName != null && !eventName.isEmpty()
+                ? eventName
+                : "this event";
+    }
+
+    private void completeStatusUpdate(Task<Void> notificationTask, String successMessage) {
+        notificationTask
+                .addOnSuccessListener(unused -> {
+                    Toast.makeText(this, successMessage, Toast.LENGTH_SHORT).show();
+                    loadApplicants();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this,
+                            successMessage + " Notification delivery failed.",
+                            Toast.LENGTH_SHORT).show();
+                    loadApplicants();
+                });
     }
 }
