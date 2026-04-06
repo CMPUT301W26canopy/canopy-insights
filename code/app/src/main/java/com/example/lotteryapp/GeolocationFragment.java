@@ -29,6 +29,9 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * Shows the organizer map view for entrant join locations.
+ */
 public class GeolocationFragment extends Fragment {
 
     private final List<String> availableLocations = new ArrayList<>();

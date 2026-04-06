@@ -1,13 +1,17 @@
 package com.example.lotteryapp;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,6 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Displays the threaded event comments feed, including replies, likes,
+ * organizer moderation, and basic profile details for each poster.
+ */
 public class CommentsFragment extends Fragment {
 
     private static final String ARG_EVENT_ID = "event_id";
@@ -50,6 +58,8 @@ public class CommentsFragment extends Fragment {
     private TextView tvReplyStatus, tvReplySnippet;
     
     private Map<String, String> userNamesCache = new HashMap<>();
+    private Map<String, String> userUsernamesCache = new HashMap<>();
+    private Map<String, String> userImagesCache = new HashMap<>();
 
     public static CommentsFragment newInstance(String eventId) {
         CommentsFragment fragment = new CommentsFragment();
@@ -195,6 +205,10 @@ public class CommentsFragment extends Fragment {
                 });
     }
 
+    /**
+     * Resolves poster names and profile images so the comment list can show
+     * friendlier identity details than raw account IDs.
+     */
     private void fetchUsernamesAndRefresh(Set<String> userIds, List<CommentModel> allComments) {
         if (userIds.isEmpty()) {
             updateDisplayList(allComments);
@@ -213,7 +227,10 @@ public class CommentsFragment extends Fragment {
                     DocumentSnapshot doc = task.getResult();
                     String uid = doc.getId();
                     String username = doc.getString("username");
-                    userNamesCache.put(uid, username != null ? username : "Unknown");
+                    String name = doc.getString("name");
+                    userNamesCache.put(uid, firstNonBlank(name, username, "Unknown"));
+                    userUsernamesCache.put(uid, firstNonBlank(username, uid));
+                    userImagesCache.put(uid, doc.getString("profileImage"));
                 }
             }
             updateDisplayList(allComments);
@@ -293,6 +310,9 @@ public class CommentsFragment extends Fragment {
                 });
     }
 
+    /**
+     * Soft-removes a comment by adding it to the event's removed list.
+     */
     private void deleteComment(CommentModel commentToDelete) {
         if (eventId == null) return;
 
@@ -308,6 +328,9 @@ public class CommentsFragment extends Fragment {
                 });
     }
 
+    /**
+     * Toggles the current user's like on a single comment inside the stored list.
+     */
     private void toggleLike(CommentModel comment) {
         if (eventId == null || currentUserId == null) return;
 
@@ -359,14 +382,19 @@ public class CommentsFragment extends Fragment {
 
             if (isRemoved) {
                 holder.tvUser.setText("Removed");
+                holder.tvMeta.setText("");
                 holder.tvText.setText("This comment was removed.");
+                bindProfileImage(holder.avatarView, null);
                 holder.btnDelete.setVisibility(View.GONE);
                 holder.btnReply.setVisibility(View.GONE);
                 holder.btnLike.setVisibility(View.GONE);
             } else {
                 String displayName = userNamesCache.get(c.getPosterID());
                 holder.tvUser.setText(displayName != null ? displayName : c.getPosterID());
+                String username = userUsernamesCache.get(c.getPosterID());
+                holder.tvMeta.setText(username != null ? "@" + username : "");
                 holder.tvText.setText(c.getMessage());
+                bindProfileImage(holder.avatarView, userImagesCache.get(c.getPosterID()));
                 
                 if (currentUserId != null && (currentUserId.equals(c.getPosterID()) || isOrganizerOrCohost || isAdmin)) {
                     holder.btnDelete.setVisibility(View.VISIBLE);
@@ -410,16 +438,49 @@ public class CommentsFragment extends Fragment {
         public int getItemCount() { return data.size(); }
 
         class ViewHolder extends RecyclerView.ViewHolder {
-            TextView tvUser, tvText;
+            TextView tvUser, tvMeta, tvText;
+            ImageView avatarView;
             Button btnReply, btnDelete, btnLike;
             ViewHolder(View v) {
                 super(v);
+                avatarView = v.findViewById(R.id.ivCommentAvatar);
                 tvUser = v.findViewById(R.id.tvCommentUser);
+                tvMeta = v.findViewById(R.id.tvCommentMeta);
                 tvText = v.findViewById(R.id.tvCommentText);
                 btnReply = v.findViewById(R.id.btnReplyComment);
                 btnDelete = v.findViewById(R.id.btnDeleteComment);
                 btnLike = v.findViewById(R.id.btnLikeComment);
             }
         }
+    }
+
+    private void bindProfileImage(ImageView imageView, String profileImage) {
+        if (imageView == null) {
+            return;
+        }
+        if (profileImage != null && !profileImage.trim().isEmpty()) {
+            try {
+                byte[] decoded = Base64.decode(profileImage, Base64.DEFAULT);
+                Bitmap bitmap = BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
+                if (bitmap != null) {
+                    imageView.setImageBitmap(bitmap);
+                    return;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        imageView.setImageResource(R.drawable.ic_person);
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) {
+                return value;
+            }
+        }
+        return null;
     }
 }

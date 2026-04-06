@@ -26,6 +26,9 @@ import com.example.lotteryapp.databinding.FragmentLoginBinding;
 
 import com.example.lotteryapp.R;
 
+/**
+ * Handles username and password sign in from the login screen.
+ */
 public class LoginFragment extends Fragment {
 
     private LoginViewModel loginViewModel;

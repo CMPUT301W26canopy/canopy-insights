@@ -21,6 +21,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Renders history rows and their action buttons for the history screen.
+ */
 public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHolder> {
 
     private final Context context;
@@ -114,7 +117,8 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
             }
         }
 
-        imageView.setAlpha(0.18f);
+        imageView.setAlpha(0.32f);
+        imageView.setBackgroundColor(Color.parseColor("#F4EEF8"));
         imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         imageView.setImageResource(R.drawable.ic_launcher_foreground);
     }
@@ -126,13 +130,13 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
 
         switch (rawStatus.trim().toLowerCase(Locale.getDefault())) {
             case "waiting":
-                return Color.parseColor("#E4A900");
+                return Color.parseColor("#C58A18");
             case "selected":
-                return Color.parseColor("#7C74FF");
+                return Color.parseColor("#6B5FA6");
             case "accepted":
             case "registered":
             case "attended":
-                return Color.parseColor("#40C66E");
+                return Color.parseColor("#3FA96A");
             case "declined":
             case "completed":
             case "cancelled":

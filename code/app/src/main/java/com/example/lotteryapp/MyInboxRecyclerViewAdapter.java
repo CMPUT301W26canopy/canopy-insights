@@ -34,11 +34,14 @@ public class MyInboxRecyclerViewAdapter extends RecyclerView.Adapter<MyInboxRecy
     public void onBindViewHolder(final ViewHolder holder, int position) {
         NotificationModel item = mValues.get(position);
         holder.mItem = item;
-        holder.mIdView.setText(item.getSenderAccountID());
+        holder.mIdView.setText(getNotificationTitle(item));
         holder.mContentView.setText(item.getMessage());
 
         if (item.getEventId() != null && !item.getEventId().isEmpty()) {
             holder.mViewEventBtn.setVisibility(View.VISIBLE);
+            holder.mViewEventBtn.setText(item.getMessage() != null && item.getMessage().startsWith("Invitation:")
+                    ? "View / Respond"
+                    : "View Event");
             holder.mViewEventBtn.setOnClickListener(v -> {
                 Context context = v.getContext();
                 Intent intent = new Intent(context, EventActivity.class);
@@ -53,6 +56,22 @@ public class MyInboxRecyclerViewAdapter extends RecyclerView.Adapter<MyInboxRecy
     @Override
     public int getItemCount() {
         return mValues.size();
+    }
+
+    private String getNotificationTitle(NotificationModel item) {
+        String message = item.getMessage() != null ? item.getMessage() : "";
+        String sender = item.getSenderAccountID() != null ? item.getSenderAccountID() : "";
+
+        if (message.startsWith("Admin update:")) {
+            return "Admin";
+        }
+        if (message.startsWith("Invitation:")) {
+            return "Invitation";
+        }
+        if (sender.equalsIgnoreCase("SYSTEM_DEFAULT") || sender.equalsIgnoreCase("system")) {
+            return "App";
+        }
+        return sender.isEmpty() ? "Notification" : sender;
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {

@@ -6,6 +6,9 @@ import android.util.Log;
 import com.google.zxing.BarcodeFormat;
 import com.journeyapps.barcodescanner.BarcodeEncoder;
 
+/**
+ * Creates QR bitmap images for public event links.
+ */
 public class QRCodeHelper {
 
     public static Bitmap generateQRCode(String eventId) {

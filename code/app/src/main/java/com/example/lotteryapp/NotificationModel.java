@@ -2,8 +2,8 @@ package com.example.lotteryapp;
 
 
 /**
- * Model for a notification which will be stored in a list
- * that list will be stored in firestore, so it can be accessed.
+ * Represents one notification stored in Firestore.
+ * Notifications can optionally point back to a specific event.
  */
 
 public class NotificationModel  {
@@ -76,10 +76,18 @@ public class NotificationModel  {
         return timestamp;
     }
 
+    /**
+     * Gets the related event ID, if the notification links to an event.
+     * @return the event ID or null when the notification is general.
+     */
     public String getEventId() {
         return eventId;
     }
 
+    /**
+     * Sets the related event ID for event-linked notifications.
+     * @param eventId the related event ID.
+     */
     public void setEventId(String eventId) {
         this.eventId = eventId;
     }

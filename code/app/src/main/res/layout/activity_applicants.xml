@@ -26,7 +26,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_arrow_back"
             android:contentDescription="Back"
-            app:tint="#888888"/>
+            app:tint="#4A4458"/>
 
         <LinearLayout
             android:layout_width="0dp"
@@ -48,7 +48,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="13sp"
-                android:textColor="#888888"/>
+                android:textColor="#6E647E"/>
         </LinearLayout>
 
         <LinearLayout
@@ -76,19 +76,21 @@
                 android:minWidth="0dp"
                 android:padding="0dp"
                 android:text="VIEW"
-                android:textColor="#6B5FA6"
+                android:textColor="#4A4458"
                 android:textStyle="bold"
                 android:textSize="14sp"
                 style="?attr/borderlessButtonStyle"/>
         </LinearLayout>
 
-        <ImageButton
+        <Button
             android:id="@+id/btnMenu"
-            android:layout_width="36dp"
+            android:layout_width="wrap_content"
             android:layout_height="36dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_more_vert"
-            android:contentDescription="Menu"/>
+            android:backgroundTint="#E8E4F3"
+            android:text="SAVE"
+            android:textAllCaps="false"
+            android:textColor="#4A4458"
+            android:textStyle="bold"/>
     </LinearLayout>
 
     <ScrollView
@@ -104,8 +106,8 @@
             <!-- Event photo area -->
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="180dp"
-                android:background="#E8E4F0"
+                android:layout_height="240dp"
+                android:background="#F1ECFA"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
                 android:layout_marginTop="8dp">
@@ -117,13 +119,25 @@
                     android:scaleType="centerCrop"/>
 
                 <TextView
+                    android:id="@+id/tvEventPhotoPlaceholder"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:text="Event photo"
-                    android:textColor="#888888"
+                    android:textColor="#6E647E"
                     android:textStyle="bold"/>
             </FrameLayout>
+
+            <Button
+                android:id="@+id/btnChangePoster"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="16dp"
+                android:backgroundTint="#E8E4F3"
+                android:text="CHANGE IMAGE"
+                android:textColor="#4A4458"/>
 
             <!-- Participants row (tap to expand) -->
             <LinearLayout
@@ -234,7 +248,7 @@
                     android:layout_height="wrap_content"
                     android:paddingStart="8dp"
                     android:paddingBottom="4dp"
-                    android:textColor="#888888"
+                    android:textColor="#6E647E"
                     android:textSize="12sp"/>
 
                 <androidx.recyclerview.widget.RecyclerView
@@ -254,13 +268,85 @@
                 android:background="#F5F3FB"
                 android:padding="16dp">
 
+                <!-- Event Name -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Event Name"
+                    android:textSize="12sp"
+                    android:textColor="#6E647E"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <EditText
+                        android:id="@+id/etEventName"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:inputType="textCapWords"
+                        android:textSize="16sp"
+                        android:textColor="#000000"
+                        android:background="@null"
+                        android:paddingBottom="4dp"/>
+
+                    <ImageButton
+                        android:id="@+id/btnClearEventName"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_close"
+                        app:tint="#6E647E"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E1DAEF" android:layout_marginBottom="12dp"/>
+
+                <!-- Location -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Location"
+                    android:textSize="12sp"
+                    android:textColor="#6E647E"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <EditText
+                        android:id="@+id/etLocation"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:inputType="textCapWords"
+                        android:textSize="16sp"
+                        android:textColor="#000000"
+                        android:background="@null"
+                        android:paddingBottom="4dp"/>
+
+                    <ImageButton
+                        android:id="@+id/btnClearLocation"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_close"
+                        app:tint="#6E647E"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E1DAEF" android:layout_marginBottom="12dp"/>
+
                 <!-- Price -->
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Price $"
                     android:textSize="12sp"
-                    android:textColor="#888888"/>
+                    android:textColor="#6E647E"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -285,10 +371,10 @@
                         android:layout_height="24dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:src="@drawable/ic_close"
-                        app:tint="#888888"/>
+                        app:tint="#6E647E"/>
                 </LinearLayout>
 
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#DDDDDD" android:layout_marginBottom="12dp"/>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E1DAEF" android:layout_marginBottom="12dp"/>
 
                 <!-- Draw Date -->
                 <TextView
@@ -296,7 +382,7 @@
                     android:layout_height="wrap_content"
                     android:text="Draw Date"
                     android:textSize="12sp"
-                    android:textColor="#888888"/>
+                    android:textColor="#6E647E"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -322,10 +408,10 @@
                         android:layout_height="24dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:src="@drawable/ic_close"
-                        app:tint="#888888"/>
+                        app:tint="#6E647E"/>
                 </LinearLayout>
 
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#DDDDDD" android:layout_marginBottom="12dp"/>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E1DAEF" android:layout_marginBottom="12dp"/>
 
                 <!-- Number of Guests -->
                 <TextView
@@ -333,7 +419,7 @@
                     android:layout_height="wrap_content"
                     android:text="Number of Guests"
                     android:textSize="12sp"
-                    android:textColor="#888888"/>
+                    android:textColor="#6E647E"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -358,10 +444,47 @@
                         android:layout_height="24dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:src="@drawable/ic_close"
-                        app:tint="#888888"/>
+                        app:tint="#6E647E"/>
                 </LinearLayout>
 
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#DDDDDD" android:layout_marginBottom="12dp"/>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E1DAEF" android:layout_marginBottom="12dp"/>
+
+                <!-- Waiting List Limit -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Waiting List Limit (optional)"
+                    android:textSize="12sp"
+                    android:textColor="#6E647E"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <EditText
+                        android:id="@+id/etWaitingListLimit"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Leave empty for no cap"
+                        android:inputType="number"
+                        android:textSize="16sp"
+                        android:textColor="#000000"
+                        android:background="@null"
+                        android:paddingBottom="4dp"/>
+
+                    <ImageButton
+                        android:id="@+id/btnClearWaitingListLimit"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_close"
+                        app:tint="#6E647E"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E1DAEF" android:layout_marginBottom="12dp"/>
 
                 <!-- Description -->
                 <TextView
@@ -369,7 +492,7 @@
                     android:layout_height="wrap_content"
                     android:text="Description"
                     android:textSize="12sp"
-                    android:textColor="#888888"/>
+                    android:textColor="#6E647E"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -395,10 +518,10 @@
                         android:layout_height="24dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:src="@drawable/ic_close"
-                        app:tint="#888888"/>
+                        app:tint="#6E647E"/>
                 </LinearLayout>
 
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#DDDDDD" android:layout_marginBottom="16dp"/>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E1DAEF" android:layout_marginBottom="16dp"/>
 
                 <!-- Delete + Run Lottery / Replacement buttons -->
                 <LinearLayout
@@ -412,8 +535,8 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="DELETE"
-                        android:backgroundTint="#FFFFFF"
-                        android:textColor="#000000"
+                        android:backgroundTint="#FDECEC"
+                        android:textColor="#B24545"
                         android:layout_marginEnd="8dp"/>
 
                     <Button
@@ -441,8 +564,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="CANCEL NO-SHOWS"
-                    android:backgroundTint="#FF9800"
+                    android:text="CANCEL SELECTED"
+                    android:backgroundTint="#D98A2B"
                     android:textColor="@android:color/white"
                     android:visibility="gone"/>
 

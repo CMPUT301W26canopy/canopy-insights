@@ -24,6 +24,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Loads and displays the signed-in user's inbox notifications.
+ */
 public class InboxFragment extends Fragment {
 
     private String accountID;

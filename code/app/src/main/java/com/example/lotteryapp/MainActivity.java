@@ -18,6 +18,9 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Shows the entrant home feed, search, and filter entry points.
+ */
 public class MainActivity extends AppCompatActivity {
 
     private EventAdapter adapter;
@@ -62,6 +65,10 @@ public class MainActivity extends AppCompatActivity {
                     masterList.clear();
                     displayList.clear();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        String visibility = doc.getString("visibility");
+                        if ("Private".equalsIgnoreCase(visibility)) {
+                            continue;
+                        }
                         EventModel event = null;
                         try {
                             event = doc.toObject(EventModel.class);
@@ -72,20 +79,23 @@ public class MainActivity extends AppCompatActivity {
                             String date = doc.getString("date");
                             String age  = doc.getString("ageGroup");
                             String loc  = doc.getString("location");
-                            String visibility = doc.getString("visibility");
+                            String eventVisibility = doc.getString("visibility");
                             Long price  = doc.getLong("price");
                             Long spots  = doc.getLong("totalSpots");
                             if (date  != null) event.setDate(date);
                             if (age   != null) event.setAgeGroup(age);
                             if (loc   != null) event.setLocation(loc);
-                            if (visibility != null) event.setVisibility(visibility);
+                            if (eventVisibility != null) event.setVisibility(eventVisibility);
                             if (price != null) event.setPrice(price.doubleValue());
                             if (spots != null) event.setTotalSpots(spots.intValue());
                         }
-                        if (event != null && !"Private".equalsIgnoreCase(event.getVisibility())) {
-                            event.setId(doc.getId());
-                            masterList.add(event);
-                            displayList.add(event);
+                        if (event != null) {
+                            hydrateEvent(event, doc);
+                            if (!"Private".equalsIgnoreCase(event.getVisibility())) {
+                                masterList.add(event);
+                                displayList.add(event);
+                                loadWaitingCount(event);
+                            }
                         }
                     }
                     adapter.updateList(displayList);
@@ -111,8 +121,9 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     List<EventModel> result = new ArrayList<>();
                     for (EventModel e : masterList) {
-                        if (e.getName().toLowerCase().contains(query) ||
-                                (e.getLocation() != null && e.getLocation().toLowerCase().contains(query))) {
+                        String name = e.getName() != null ? e.getName().toLowerCase() : "";
+                        String location = e.getLocation() != null ? e.getLocation().toLowerCase() : "";
+                        if (name.contains(query) || location.contains(query)) {
                             result.add(e);
                         }
                     }
@@ -179,5 +190,64 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+    }
+
+    private void hydrateEvent(EventModel event, QueryDocumentSnapshot doc) {
+        event.setId(doc.getId());
+
+        if (event.getName() == null) {
+            event.setName(doc.getString("name"));
+        }
+        if (event.getDate() == null) {
+            event.setDate(doc.getString("date"));
+        }
+        if (event.getAgeGroup() == null) {
+            event.setAgeGroup(doc.getString("ageGroup"));
+        }
+        if (event.getLocation() == null) {
+            event.setLocation(doc.getString("location"));
+        }
+        if (event.getVisibility() == null) {
+            event.setVisibility(doc.getString("visibility"));
+        }
+        if (event.getPosterImage() == null || event.getPosterImage().trim().isEmpty()) {
+            event.setPosterImage(firstNonBlank(
+                    doc.getString("posterImage"),
+                    doc.getString("poster")
+            ));
+        }
+        if (event.getWaitingList() == null) {
+            Object waitingList = doc.get("waitingList");
+            if (waitingList instanceof List) {
+                event.setWaitingList((List<String>) waitingList);
+            } else {
+                event.setWaitingList(new ArrayList<>());
+            }
+        }
+    }
+
+    private void loadWaitingCount(EventModel event) {
+        if (event == null || event.getId() == null) {
+            return;
+        }
+
+        FirestoreHelper.getDb().collection("applications")
+                .whereEqualTo("eventId", event.getId())
+                .whereEqualTo("status", "waiting")
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    event.setWaitingCount(snapshot.size());
+                    adapter.updateList(displayList);
+                });
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (first != null && !first.trim().isEmpty()) {
+            return first;
+        }
+        if (second != null && !second.trim().isEmpty()) {
+            return second;
+        }
+        return null;
     }
 }

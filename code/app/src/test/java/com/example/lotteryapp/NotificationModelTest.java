@@ -44,4 +44,12 @@ public class NotificationModelTest {
         assertEquals(timestamp, notification.getTimestamp());
     }
 
+    @Test
+    public void testSetAndGetEventId() {
+        NotificationModel notification = new NotificationModel();
+        String eventId = "event-42";
+        notification.setEventId(eventId);
+        assertEquals(eventId, notification.getEventId());
+    }
+
 }

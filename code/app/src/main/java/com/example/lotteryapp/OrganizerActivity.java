@@ -2,8 +2,11 @@ package com.example.lotteryapp;
 
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,6 +29,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Shows the organizer dashboard and event list.
+ */
 public class OrganizerActivity extends AppCompatActivity {
 
     private String organizerId;
@@ -73,15 +79,22 @@ public class OrganizerActivity extends AppCompatActivity {
             @Override
             public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
                 EventModel event = myEventsList.get(position);
-                ((TextView) holder.itemView.findViewById(android.R.id.text1)).setText(event.getName());
-                ((TextView) holder.itemView.findViewById(android.R.id.text2))
-                        .setText("Date: " + event.getDate() + "  |  Spots: " + event.getTotalSpots());
+                TextView titleView = holder.itemView.findViewById(android.R.id.text1);
+                TextView subtitleView = holder.itemView.findViewById(android.R.id.text2);
+                titleView.setText(event.getName());
+                subtitleView.setText("Location: " + safe(event.getLocation(), "TBA")
+                        + "  |  Date: " + safe(event.getDate(), "TBA")
+                        + "  |  Spots: " + event.getTotalSpots()
+                        + "  |  Waiting: " + event.getWaitingListCount());
+                styleSimpleListRow(holder.itemView, titleView, subtitleView);
                 holder.itemView.setOnClickListener(v -> {
                     Intent intent = new Intent(OrganizerActivity.this, ApplicantsActivity.class);
                     intent.putExtra("EVENT_ID", event.getId());
                     intent.putExtra("EVENT_NAME", event.getName());
                     intent.putExtra("EVENT_DATE", event.getDate());
                     intent.putExtra("TOTAL_SPOTS", event.getTotalSpots());
+                    intent.putExtra("PRICE", event.getPrice());
+                    intent.putExtra("DESCRIPTION", event.getDescription());
                     startActivity(intent);
                 });
             }
@@ -150,7 +163,7 @@ public class OrganizerActivity extends AppCompatActivity {
                         if (price != null) e.setPrice(price.doubleValue());
                         if (spots != null) e.setTotalSpots(spots.intValue());
                     }
-                    e.setId(doc.getId());
+                    hydrateEvent(e, doc);
                     mergedEvents.add(e);
                 }
             }
@@ -182,5 +195,81 @@ public class OrganizerActivity extends AppCompatActivity {
                 startActivity(new Intent(this, LoginActivity.class));
             }
         });
+    }
+
+    private void hydrateEvent(EventModel event, QueryDocumentSnapshot doc) {
+        event.setId(doc.getId());
+        if (event.getDescription() == null) {
+            event.setDescription(doc.getString("description"));
+        }
+        if (event.getName() == null) {
+            event.setName(doc.getString("name"));
+        }
+        if (event.getDate() == null) {
+            event.setDate(doc.getString("date"));
+        }
+        if (event.getAgeGroup() == null) {
+            event.setAgeGroup(doc.getString("ageGroup"));
+        }
+        if (event.getLocation() == null) {
+            event.setLocation(doc.getString("location"));
+        }
+        if (event.getPosterImage() == null || event.getPosterImage().trim().isEmpty()) {
+            event.setPosterImage(firstNonBlank(
+                    doc.getString("posterImage"),
+                    doc.getString("poster")
+            ));
+        }
+        if (event.getWaitingList() == null) {
+            Object waitingList = doc.get("waitingList");
+            if (waitingList instanceof List) {
+                event.setWaitingList((List<String>) waitingList);
+            } else {
+                event.setWaitingList(new ArrayList<>());
+            }
+        }
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (first != null && !first.trim().isEmpty()) {
+            return first;
+        }
+        if (second != null && !second.trim().isEmpty()) {
+            return second;
+        }
+        return null;
+    }
+
+    private String safe(String value, String fallback) {
+        if (value == null || value.trim().isEmpty()) {
+            return fallback;
+        }
+        return value;
+    }
+
+    private void styleSimpleListRow(View itemView, TextView titleView, TextView subtitleView) {
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(0xFFF7F3FC);
+        background.setCornerRadius(dpToPx(16));
+        background.setStroke(dpToPx(1), 0xFFE2DAF0);
+        itemView.setBackground(background);
+        itemView.setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(14));
+
+        ViewGroup.LayoutParams params = itemView.getLayoutParams();
+        if (params instanceof RecyclerView.LayoutParams) {
+            RecyclerView.LayoutParams layoutParams = (RecyclerView.LayoutParams) params;
+            layoutParams.bottomMargin = dpToPx(10);
+            itemView.setLayoutParams(layoutParams);
+        }
+
+        titleView.setTextColor(0xFF221A35);
+        titleView.setTypeface(titleView.getTypeface(), Typeface.BOLD);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        subtitleView.setTextColor(0xFF6E647E);
+        subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+    }
+
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 }

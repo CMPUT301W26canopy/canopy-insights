@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:padding="12dp">
+
+    <ImageView
+        android:id="@+id/ivApplicantAvatar"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="#E8E4F3"
+        android:contentDescription="Applicant avatar"
+        android:padding="8dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_person" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvApplicantName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Applicant name"
+            android:textColor="#221A35"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvApplicantMeta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="username | Status: waiting"
+            android:textColor="#6E647E"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+</LinearLayout>
