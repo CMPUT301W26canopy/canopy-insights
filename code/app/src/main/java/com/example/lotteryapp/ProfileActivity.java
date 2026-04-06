@@ -437,6 +437,15 @@ public class ProfileActivity extends AppCompatActivity {
                     if (!userDoc.exists()) {
                         return;
                     }
+
+                    boolean enabled = userDoc.getBoolean("notificationEnabled") != null
+                            ? userDoc.getBoolean("notificationEnabled") : true;
+
+                    if (!enabled) {
+                        inboxRedDot.setVisibility(View.GONE);
+                        return;
+                    }
+
                     long readCount = userDoc.getLong("notificationsRead") != null
                             ? userDoc.getLong("notificationsRead") : 0;
 
