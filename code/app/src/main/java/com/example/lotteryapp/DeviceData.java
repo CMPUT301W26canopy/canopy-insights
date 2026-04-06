@@ -17,6 +17,7 @@ public class DeviceData {
     private static final String PREF_NAME = "UserSession";
     private static final String KEY_ACCOUNT_ID = "accountID";
     private static final String KEY_USERNAME = "username";
+    private static final String KEY_USER_TYPE = "userType";
     private static final String KEY_IS_LOGGED_IN = "isLoggedIn";
     private static final String KEY_DEVICE_ID = "deviceId";
 
@@ -47,14 +48,27 @@ public class DeviceData {
     }
 
     /**
+     * Creates a login session while preserving any existing stored user type.
+     */
+    public void createLoginSession(String accountID, String username) {
+        createLoginSession(accountID, username, getUserType());
+    }
+
+    /**
      * Creates a login session by storing user details.
      * @param accountID the user's unique account ID.
      * @param username the user's username.
+     * @param userType the user's type (e.g., "Admin", "User").
      */
-    public void createLoginSession(String accountID, String username) {
+    public void createLoginSession(String accountID, String username, String userType) {
         editor.putBoolean(KEY_IS_LOGGED_IN, true);
         editor.putString(KEY_ACCOUNT_ID, accountID);
         editor.putString(KEY_USERNAME, username);
+        if (userType != null && !userType.trim().isEmpty()) {
+            editor.putString(KEY_USER_TYPE, userType);
+        } else {
+            editor.remove(KEY_USER_TYPE);
+        }
         editor.apply();
     }
 
@@ -107,12 +121,30 @@ public class DeviceData {
     }
 
     /**
+     * Gets the stored user type.
+     * @return the user type, or null if not found.
+     */
+    public String getUserType() {
+        return pref.getString(KEY_USER_TYPE, null);
+    }
+
+    /**
+     * Checks if the current user is an administrator.
+     * @return true if the userType is "Admin", false otherwise.
+     */
+    public boolean isAdmin() {
+        String type = getUserType();
+        return "Admin".equalsIgnoreCase(type);
+    }
+
+    /**
      * Clears the session data and logs the user out.
      */
     public void logoutUser() {
         editor.remove(KEY_IS_LOGGED_IN);
         editor.remove(KEY_ACCOUNT_ID);
         editor.remove(KEY_USERNAME);
+        editor.remove(KEY_USER_TYPE);
         editor.apply();
     }
 }

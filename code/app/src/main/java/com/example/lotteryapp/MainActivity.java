@@ -79,19 +79,23 @@ public class MainActivity extends AppCompatActivity {
                             String date = doc.getString("date");
                             String age  = doc.getString("ageGroup");
                             String loc  = doc.getString("location");
+                            String eventVisibility = doc.getString("visibility");
                             Long price  = doc.getLong("price");
                             Long spots  = doc.getLong("totalSpots");
                             if (date  != null) event.setDate(date);
                             if (age   != null) event.setAgeGroup(age);
                             if (loc   != null) event.setLocation(loc);
+                            if (eventVisibility != null) event.setVisibility(eventVisibility);
                             if (price != null) event.setPrice(price.doubleValue());
                             if (spots != null) event.setTotalSpots(spots.intValue());
                         }
                         if (event != null) {
                             hydrateEvent(event, doc);
-                            masterList.add(event);
-                            displayList.add(event);
-                            loadWaitingCount(event);
+                            if (!"Private".equalsIgnoreCase(event.getVisibility())) {
+                                masterList.add(event);
+                                displayList.add(event);
+                                loadWaitingCount(event);
+                            }
                         }
                     }
                     adapter.updateList(displayList);
@@ -202,6 +206,9 @@ public class MainActivity extends AppCompatActivity {
         }
         if (event.getLocation() == null) {
             event.setLocation(doc.getString("location"));
+        }
+        if (event.getVisibility() == null) {
+            event.setVisibility(doc.getString("visibility"));
         }
         if (event.getPosterImage() == null || event.getPosterImage().trim().isEmpty()) {
             event.setPosterImage(firstNonBlank(

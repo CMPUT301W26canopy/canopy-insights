@@ -16,7 +16,11 @@ import com.example.lotteryapp.ui.login.LoginFragment;
 import com.example.lotteryapp.ui.login.SignUpFragment;
 import com.google.firebase.firestore.DocumentSnapshot;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -75,6 +79,12 @@ public class LoginActivity extends AppCompatActivity {
         setupBottomNav();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateSignedInAsLabel();
+    }
+
     /**
      * Reuses an existing device-linked entrant account, or creates one on the fly.
      */
@@ -93,8 +103,39 @@ public class LoginActivity extends AppCompatActivity {
                     if (!queryDocumentSnapshots.isEmpty()) {
                         reuseDeviceAccount(deviceId, queryDocumentSnapshots.getDocuments().get(0));
                     } else {
-                        createDeviceAccount(deviceId);
+                        findLegacyDeviceAccount(deviceId);
                     }
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Device login failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    /**
+     * Supports older device-login documents that were stored without a deviceId field.
+     */
+    private void findLegacyDeviceAccount(String deviceId) {
+        String generatedAccountId = buildDeviceAccountId(deviceId);
+        FirestoreHelper.getDb().collection("accounts")
+                .document(generatedAccountId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        reuseDeviceAccount(deviceId, documentSnapshot);
+                        return;
+                    }
+
+                    FirestoreHelper.getDb().collection("accounts")
+                            .document(deviceId)
+                            .get()
+                            .addOnSuccessListener(legacySnapshot -> {
+                                if (legacySnapshot.exists()) {
+                                    reuseDeviceAccount(deviceId, legacySnapshot);
+                                } else {
+                                    createDeviceAccount(deviceId);
+                                }
+                            })
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(this, "Device login failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Device login failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
@@ -107,6 +148,7 @@ public class LoginActivity extends AppCompatActivity {
     private void reuseDeviceAccount(String deviceId, DocumentSnapshot documentSnapshot) {
         String accountId = firstNonBlank(documentSnapshot.getString("accountID"), documentSnapshot.getId());
         String username = firstNonBlank(documentSnapshot.getString("username"), buildGuestUsername(deviceId));
+        String userType = firstNonBlank(documentSnapshot.getString("userType"), "entrant");
 
         Map<String, Object> updates = new HashMap<>();
         if (!documentSnapshot.contains("accountID")) {
@@ -116,17 +158,20 @@ public class LoginActivity extends AppCompatActivity {
             updates.put("deviceId", deviceId);
         }
         if (documentSnapshot.getString("userType") == null || documentSnapshot.getString("userType").trim().isEmpty()) {
-            updates.put("userType", "entrant");
+            updates.put("userType", userType);
         }
         if (!documentSnapshot.contains("notificationEnabled")) {
             updates.put("notificationEnabled", true);
+        }
+        if (!documentSnapshot.contains("notificationsRead")) {
+            updates.put("notificationsRead", 0);
         }
 
         if (!updates.isEmpty()) {
             documentSnapshot.getReference().update(updates);
         }
 
-        openProfile(accountId, username);
+        openProfile(accountId, username, userType);
     }
 
     /**
@@ -134,21 +179,26 @@ public class LoginActivity extends AppCompatActivity {
      * using the app without a username/password account.
      */
     private void createDeviceAccount(String deviceId) {
-        String accountId = "device_" + deviceId.replaceAll("[^A-Za-z0-9_-]", "");
+        String accountId = buildDeviceAccountId(deviceId);
         String username = buildGuestUsername(deviceId);
+        String userType = "entrant";
 
-        ProfileModel profile = new ProfileModel();
-        profile.setAccountID(accountId);
-        profile.setUsername(username);
-        profile.setName("Guest User");
-        profile.setDeviceId(deviceId);
-        profile.setUserType("entrant");
-        profile.setNotificationEnabled(true);
+        Map<String, Object> account = new HashMap<>();
+        account.put("accountID", accountId);
+        account.put("username", username);
+        account.put("name", "Guest User");
+        account.put("deviceId", deviceId);
+        account.put("userType", userType);
+        account.put("notificationEnabled", true);
+        account.put("notificationsRead", 0);
 
         FirestoreHelper.getDb().collection("accounts")
                 .document(accountId)
-                .set(profile)
-                .addOnSuccessListener(unused -> openProfile(accountId, username))
+                .set(account)
+                .addOnSuccessListener(unused -> {
+                    seedWelcomeNotification(accountId);
+                    openProfile(accountId, username, userType);
+                })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to create device account", Toast.LENGTH_SHORT).show());
     }
@@ -156,13 +206,34 @@ public class LoginActivity extends AppCompatActivity {
     /**
      * Starts the normal profile flow after a successful sign-in.
      */
-    private void openProfile(String accountId, String username) {
-        deviceData.createLoginSession(accountId, username);
+    private void openProfile(String accountId, String username, String userType) {
+        deviceData.createLoginSession(accountId, username, userType);
+        updateSignedInAsLabel();
 
         Intent intent = new Intent(this, ProfileActivity.class);
         intent.putExtra("accountID", accountId);
         startActivity(intent);
         finish();
+    }
+
+    private void seedWelcomeNotification(String accountId) {
+        NotificationModel notification = new NotificationModel();
+        notification.setSenderAccountID("SYSTEM");
+        notification.setReceiverAccountID(accountId);
+        notification.setMessage("Welcome to Lottery App! You have logged in with your device.");
+        notification.setTimestamp(new SimpleDateFormat("MMddHHmmss", Locale.getDefault()).format(new Date()));
+
+        List<NotificationModel> notificationList = new ArrayList<>();
+        notificationList.add(notification);
+
+        Map<String, Object> notificationData = new HashMap<>();
+        notificationData.put("notificationList", notificationList);
+
+        FirestoreHelper.getDb().collection("notifications")
+                .document(accountId)
+                .set(notificationData)
+                .addOnFailureListener(e ->
+                        Log.w("LoginActivity", "Failed to create welcome notification", e));
     }
 
     /**
@@ -193,6 +264,10 @@ public class LoginActivity extends AppCompatActivity {
             suffix = "device";
         }
         return "guest_" + suffix.toLowerCase(Locale.getDefault());
+    }
+
+    private String buildDeviceAccountId(String deviceId) {
+        return "device_" + deviceId.replaceAll("[^A-Za-z0-9_-]", "");
     }
 
     private String firstNonBlank(String first, String second) {

@@ -124,6 +124,7 @@ public class CreateEventActivity extends AppCompatActivity {
         String date        = eventDateInput.getText().toString().trim();
         String spotsStr    = eventTotalSpotsInput.getText().toString().trim();
         String waitlistLimitStr = eventWaitlistLimitInput.getText().toString().trim();
+        String visibility  = btnPrivate.getText().toString();
 
         if (name.isEmpty() || location.isEmpty() || priceStr.isEmpty() ||
                 description.isEmpty() || date.isEmpty() || spotsStr.isEmpty()) {
@@ -180,7 +181,7 @@ public class CreateEventActivity extends AppCompatActivity {
         event.put("invitedHosts", new ArrayList<>());
         event.put("ageGroup", "All Ages");
         event.put("organizerId", organizerId);
-        event.put("visibility", btnPrivate.getText().toString());
+        event.put("visibility", visibility);
         event.put("geolocationList", addedLocations);
         event.put("geolocationVerification", geolocationVerification);
         if (selectedPosterBase64 != null && !selectedPosterBase64.isEmpty()) {
@@ -192,7 +193,7 @@ public class CreateEventActivity extends AppCompatActivity {
                 .add(event)
                 .addOnSuccessListener(docRef -> {
                     String eventId = docRef.getId();
-                    if (!"Private".equalsIgnoreCase(btnPrivate.getText().toString())) {
+                    if (visibility.equalsIgnoreCase("Public")) {
                         Bitmap qr = QRCodeHelper.generateQRCode(eventId);
                         if (qr != null) {
                             eventQRCode.setImageBitmap(qr);
@@ -203,6 +204,7 @@ public class CreateEventActivity extends AppCompatActivity {
                     } else {
                         eventQRCode.setVisibility(View.GONE);
                     }
+
                     eventCreated = true;
                     createEventButton.setText("Done");
                     Toast.makeText(this, "Event created!", Toast.LENGTH_SHORT).show();
