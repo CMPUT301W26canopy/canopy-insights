@@ -241,6 +241,9 @@ public class ApplicantsActivity extends AppCompatActivity {
         loadApplicants();
     }
 
+    /**
+     * Loads event visibility from Firestore and updates the UI accordingly.
+     */
     private void loadEventVisibility() {
         if (eventId == null) return;
         FirestoreHelper.getDb().collection("events").document(eventId)
@@ -432,6 +435,9 @@ public class ApplicantsActivity extends AppCompatActivity {
                         Toast.makeText(this, "Failed to save", Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * @param status Filter applicants by status
+     */
     private void filterList(String status) {
         displayList.clear();
         for (Map<String, String> a : applicantsList)
@@ -568,6 +574,10 @@ public class ApplicantsActivity extends AppCompatActivity {
                         Toast.makeText(this, "Failed to cancel", Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * Deletes an event by removing it from firestore, along with associated data
+     */
+
     private void deleteEvent() {
         FirestoreHelper.getDb().collection("applications")
                 .whereEqualTo("eventId", eventId)
@@ -590,6 +600,10 @@ public class ApplicantsActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * @param active Button to set as what filter is active for displaying applicants
+     *
+     */
     private void setActiveFilter(Button active) {
         Button[] all = {
                 findViewById(R.id.btnFilterAll),
@@ -605,6 +619,9 @@ public class ApplicantsActivity extends AppCompatActivity {
         active.setTextColor(0xFFFFFFFF);
     }
 
+    /**
+     * downloads a CSV file of accepted applicants
+     */
     private void downLoadCSV() {
         List<Map<String, String>> acceptedApplicants = new ArrayList<>();
         for (Map<String, String> applicant : applicantsList) {
@@ -651,6 +668,9 @@ public class ApplicantsActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * @param rows List of rows to save to CSV
+     */
     private void saveCsvToFile(List<Map<String, String>> rows) {
         StringBuilder csv = new StringBuilder();
         csv.append("Username,Name,Phone,Email,Status\n");
@@ -690,6 +710,10 @@ public class ApplicantsActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * @param userIds List of user IDs to notify
+     * @return Task to notify selected users
+     */
     private Task<Void> notifySelectedUsers(List<String> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return Tasks.forResult(null);
@@ -703,6 +727,10 @@ public class ApplicantsActivity extends AppCompatActivity {
         );
     }
 
+    /**
+     * @param userIds List of user IDs to notify
+     * @return Task to notify cancelled users
+     */
     private Task<Void> notifyCancelledUsers(List<String> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return Tasks.forResult(null);
@@ -716,6 +744,10 @@ public class ApplicantsActivity extends AppCompatActivity {
         );
     }
 
+    /**
+     * @param userIds List of user IDs to notify
+     * @return Task to notify waiting users
+     */
     private Task<Void> notifyWaitingUsers(List<String> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return Tasks.forResult(null);
@@ -729,6 +761,10 @@ public class ApplicantsActivity extends AppCompatActivity {
         );
     }
 
+    /**
+     * @return Task to remove users from the waiting list
+     * @param userIds List of user IDs to remove from the waiting list
+     */
     private Task<Void> removeUsersFromWaitingList(List<String> userIds) {
         if (eventId == null || eventId.trim().isEmpty() || userIds == null || userIds.isEmpty()) {
             return Tasks.forResult(null);
@@ -775,6 +811,9 @@ public class ApplicantsActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     *This method returns the organizer's account ID.
+     */
     private String getNotificationSenderId() {
         String organizerId = DeviceData.getInstance(this).getAccountID();
         return organizerId != null && !organizerId.isEmpty()
@@ -782,12 +821,19 @@ public class ApplicantsActivity extends AppCompatActivity {
                 : "SYSTEM_DEFAULT";
     }
 
+    /**
+     * This method returns the name of the event for notifications.
+     */
     private String getNotificationEventName() {
         return eventName != null && !eventName.isEmpty()
                 ? eventName
                 : "this event";
     }
 
+    /**
+     * @param notificationTask Task to run after notification delivery
+     * @param successMessage Message to display after notification delivery
+     */
     private void completeStatusUpdate(Task<Void> notificationTask, String successMessage) {
         notificationTask
                 .addOnSuccessListener(unused -> {
@@ -802,6 +848,9 @@ public class ApplicantsActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * @param posterBase64 Base64-encoded poster image for the event
+     */
     private void bindPoster(String posterBase64) {
         if (eventPhotoView == null) {
             return;
@@ -828,6 +877,10 @@ public class ApplicantsActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * @param imageView ImageView to bind the profile image to
+     * @param profileImageBase64 Base64-encoded profile image for the user
+     */
     private void bindAvatar(ImageView imageView, String profileImageBase64) {
         if (imageView == null) {
             return;
@@ -848,6 +901,9 @@ public class ApplicantsActivity extends AppCompatActivity {
         imageView.setImageResource(R.drawable.ic_person);
     }
 
+    /**
+     * @param uri Uri of the selected image
+     */
     private void handlePosterSelection(Uri uri) {
         if (uri == null) {
             return;
@@ -871,6 +927,9 @@ public class ApplicantsActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * @return int The configured total spots for the event
+     */
     private int getConfiguredTotalSpots() {
         String spotsStr = etTotalSpots != null ? etTotalSpots.getText().toString().trim() : "";
         if (!spotsStr.isEmpty()) {
@@ -882,6 +941,10 @@ public class ApplicantsActivity extends AppCompatActivity {
         return Math.max(totalSpots, 0);
     }
 
+    /**
+     * @param status Status of the event
+     * @return String The formatted status of the event
+     */
     private String formatStatus(String status) {
         if (status == null || status.trim().isEmpty()) {
             return "Unknown";
@@ -893,21 +956,37 @@ public class ApplicantsActivity extends AppCompatActivity {
         return first + rest;
     }
 
+    /**
+     * @param value Value to convert to a string
+     * @return String The string value of the object, or null if it is null or empty
+     */
     private String csvValue(String value) {
         String safe = value == null ? "" : value.replace("\"", "\"\"");
         return "\"" + safe + "\"";
     }
 
+    /**
+     * This method toggles the visibility of the event so the organizer can view what type it is
+     */
     private void toggleVisibility() {
         tvVisibility.setText("Private".equalsIgnoreCase(tvVisibility.getText().toString())
                 ? "Public"
                 : "Private");
     }
 
+    /**
+     * @param rawValue Visibility of the event
+     * @return String The formatted visibility of the event
+     */
     private String normalizeVisibility(String rawValue) {
         return "Private".equalsIgnoreCase(rawValue) ? "Private" : "Public";
     }
 
+    /**
+     * @param itemView View to style as a simple list row
+     * @param titleView Title view to style
+     * @param subtitleView Subtitle view to style
+     */
     private void styleSimpleListRow(View itemView, TextView titleView, TextView subtitleView) {
         GradientDrawable background = new GradientDrawable();
         background.setColor(0xFFF7F3FC);
@@ -943,7 +1022,11 @@ public class ApplicantsActivity extends AppCompatActivity {
         }
         return outputStream.toByteArray();
     }
-
+    /**
+     * @return Bitmap to apply EXIF rotation to
+     * @param bitmap Bitmap to rotate
+     * @param imageBytes Image bytes of the bitmap
+     */
     private Bitmap applyExifRotation(Bitmap bitmap, byte[] imageBytes) {
         try {
             ExifInterface exifInterface = new ExifInterface(new ByteArrayInputStream(imageBytes));
@@ -973,6 +1056,11 @@ public class ApplicantsActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * @return Bitmap to crop to portrait
+     * @param bitmap Bitmap to crop
+     * @param targetRatio Target aspect ratio
+     */
     private Bitmap cropToPortrait(Bitmap bitmap, float targetRatio) {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
@@ -998,6 +1086,11 @@ public class ApplicantsActivity extends AppCompatActivity {
         return Bitmap.createBitmap(bitmap, left, top, cropWidth, cropHeight);
     }
 
+    /**
+     * @return Bitmap to scale
+     * @param maxDimension Maximum dimension to scale to
+     * @param bitmap Bitmap to scale
+     */
     private Bitmap scaleBitmap(Bitmap bitmap, int maxDimension) {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
@@ -1012,12 +1105,20 @@ public class ApplicantsActivity extends AppCompatActivity {
         return Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true);
     }
 
+    /**
+     * @return String Base64-encoded image
+     * @param bitmap Bitmap to encode
+     */
     private String encodeBitmap(Bitmap bitmap) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream);
         return Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP);
     }
 
+    /**
+     * @param value Object to convert to a string
+     * @return String The string value of the object, or null if it is null or empty
+     */
     private String asString(Object value) {
         if (value == null) {
             return null;
@@ -1025,6 +1126,11 @@ public class ApplicantsActivity extends AppCompatActivity {
         return String.valueOf(value);
     }
 
+    /**
+     * @param first First string to check
+     * @param second Second string to check
+     * @return String The first non-null string
+     */
     private String firstNonBlank(String first, String second) {
         if (first != null && !first.trim().isEmpty()) {
             return first;
@@ -1035,6 +1141,10 @@ public class ApplicantsActivity extends AppCompatActivity {
         return null;
     }
 
+    /**
+     * This method allows organizer to
+     * view applicants who were selected but didn't sign up and then cancel them
+     */
     private void showDeclineInvitationDialog() {
         List<Map<String, String>> selectedApplicants = new ArrayList<>();
         for (Map<String, String> a : applicantsList) {
@@ -1063,6 +1173,9 @@ public class ApplicantsActivity extends AppCompatActivity {
                 .show();
     }
 
+    /**
+     * @param applicant Map of applicant data
+     */
     private void declineInvitation(Map<String, String> applicant) {
         String applicationId = applicant.get("id");
         String userId = applicant.get("userId");
