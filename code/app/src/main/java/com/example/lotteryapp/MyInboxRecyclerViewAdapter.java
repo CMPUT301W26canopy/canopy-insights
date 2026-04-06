@@ -14,11 +14,17 @@ import java.util.List;
 
 /**
  * {@link RecyclerView.Adapter} that can display a {@link NotificationModel}.
+ * It manages the display of individual notification items in the inbox list,
+ * including event navigation and conditional action button labels.
  */
 public class MyInboxRecyclerViewAdapter extends RecyclerView.Adapter<MyInboxRecyclerViewAdapter.ViewHolder> {
 
     private final List<NotificationModel> mValues;
 
+    /**
+     * Constructs a new MyInboxRecyclerViewAdapter.
+     * @param items The list of {@link NotificationModel} objects to display.
+     */
     public MyInboxRecyclerViewAdapter(List<NotificationModel> items) {
         mValues = items;
     }
@@ -58,6 +64,11 @@ public class MyInboxRecyclerViewAdapter extends RecyclerView.Adapter<MyInboxRecy
         return mValues.size();
     }
 
+    /**
+     * Categorizes a notification to provide a readable title label based on its content or sender.
+     * @param item The notification model to analyze.
+     * @return A string title (e.g., "Admin", "Invitation", "App", or the sender's ID).
+     */
     private String getNotificationTitle(NotificationModel item) {
         String message = item.getMessage() != null ? item.getMessage() : "";
         String sender = item.getSenderAccountID() != null ? item.getSenderAccountID() : "";
@@ -74,12 +85,19 @@ public class MyInboxRecyclerViewAdapter extends RecyclerView.Adapter<MyInboxRecy
         return sender.isEmpty() ? "Notification" : sender;
     }
 
+    /**
+     * View holder for individual notification list items.
+     */
     public class ViewHolder extends RecyclerView.ViewHolder {
         public final TextView mIdView;
         public final TextView mContentView;
         public final Button mViewEventBtn;
         public NotificationModel mItem;
 
+        /**
+         * Constructs a new ViewHolder.
+         * @param view The view associated with the list item.
+         */
         public ViewHolder(View view) {
             super(view);
             mIdView = view.findViewById(R.id.item_number);

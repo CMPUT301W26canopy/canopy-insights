@@ -43,6 +43,10 @@ public class MapActivity extends AppCompatActivity {
         loadApplicantLocations();
     }
 
+    /**
+     * Fetches geolocation data for all applicants of the current event from Firestore.
+     * Calculates the center point and prepares JavaScript marker commands for the map.
+     */
     private void loadApplicantLocations() {
         if (eventId == null) return;
 
@@ -82,6 +86,13 @@ public class MapActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed to load locations", Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * Injects HTML and JavaScript into the WebView to render a Leaflet map.
+     * Sets up the base OpenStreetMap layer and resolves marker asset loading issues.
+     * @param lat The latitude to center the map on.
+     * @param lng The longitude to center the map on.
+     * @param markersJs A string containing JavaScript L.marker commands to execute.
+     */
     private void loadLeafletMap(double lat, double lng, String markersJs) {
         String html = "<html><head>" +
                 "<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />" +

@@ -21,6 +21,10 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A dialog fragment that allows an organizer to send notifications to specific groups of applicants
+ * (e.g., waiting, selected, cancelled, accepted) for a particular event.
+ */
 public class SendNotificationFragment extends DialogFragment {
 
     private String eventId;
@@ -28,6 +32,13 @@ public class SendNotificationFragment extends DialogFragment {
     private Spinner spinnerGroups;
     private EditText etMessage;
 
+    /**
+     * Creates a new instance of SendNotificationFragment with event details.
+     *
+     * @param eventId   The unique ID of the event.
+     * @param eventName The name of the event.
+     * @return A new instance of SendNotificationFragment.
+     */
     public static SendNotificationFragment newInstance(String eventId, String eventName) {
         SendNotificationFragment fragment = new SendNotificationFragment();
         Bundle args = new Bundle();
@@ -37,6 +48,11 @@ public class SendNotificationFragment extends DialogFragment {
         return fragment;
     }
 
+    /**
+     * Initializes the fragment and retrieves event details from arguments.
+     *
+     * @param savedInstanceState If the fragment is being re-created from a previous saved state.
+     */
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,6 +62,14 @@ public class SendNotificationFragment extends DialogFragment {
         }
     }
 
+    /**
+     * Inflates the layout for the notification dialog and initializes UI components.
+     *
+     * @param inflater           The LayoutInflater object that can be used to inflate any views in the fragment.
+     * @param container          If non-null, this is the parent view that the fragment's UI should be attached to.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state.
+     * @return The View for the fragment's UI.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -75,6 +99,12 @@ public class SendNotificationFragment extends DialogFragment {
         return view;
     }
 
+    /**
+     * Fetches users with the specified status for the current event and sends a notification to them.
+     *
+     * @param status  The applicant status group to target (e.g., "waiting", "selected").
+     * @param message The content of the notification message.
+     */
     private void sendNotification(String status, String message) {
         FirestoreHelper.getDb().collection("applications")
                 .whereEqualTo("eventId", eventId)
@@ -109,6 +139,9 @@ public class SendNotificationFragment extends DialogFragment {
                 });
     }
 
+    /**
+     * Sets the dialog window dimensions when the fragment starts.
+     */
     @Override
     public void onStart() {
         super.onStart();

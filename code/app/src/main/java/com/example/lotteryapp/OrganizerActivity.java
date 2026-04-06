@@ -31,6 +31,7 @@ import java.util.Set;
 
 /**
  * Shows the organizer dashboard and event list.
+ * This activity handles displaying events that the user is organizing or co-hosting.
  */
 public class OrganizerActivity extends AppCompatActivity {
 
@@ -110,12 +111,21 @@ public class OrganizerActivity extends AppCompatActivity {
     }
 
     // reload events every time we come back from CreateEventActivity
+    /**
+     * Called when the activity is resuming.
+     * Reloads the organizer's events to ensure the list is up to date.
+     */
     @Override
     protected void onResume() {
         super.onResume();
         loadMyEvents();
     }
 
+    /**
+     * Updates the UI to reflect which tab is currently active.
+     * @param active The button that should be styled as active.
+     * @param inactive The button that should be styled as inactive.
+     */
     private void setActiveTab(Button active, Button inactive) {
         active.setBackgroundTintList(ColorStateList.valueOf(0xFF6B5FA6));
         active.setTextColor(0xFFFFFFFF);
@@ -123,6 +133,10 @@ public class OrganizerActivity extends AppCompatActivity {
         inactive.setTextColor(0xFF6B5FA6);
     }
 
+    /**
+     * Fetches events from Firestore where the user is either the primary organizer or a co-host.
+     * Merges results and updates the list display.
+     */
     private void loadMyEvents() {
         if (organizerId == null) {
             Toast.makeText(this, "Please sign in to view your events", Toast.LENGTH_SHORT).show();
@@ -180,6 +194,9 @@ public class OrganizerActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Configures the click listeners for the bottom navigation bar.
+     */
     private void setupBottomNav() {
         findViewById(R.id.navHome).setOnClickListener(v ->
                 startActivity(new Intent(this, MainActivity.class)));
@@ -197,6 +214,11 @@ public class OrganizerActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Manually populates an EventModel with fields from a Firestore document snapshot.
+     * @param event The EventModel instance to populate.
+     * @param doc The source QueryDocumentSnapshot from Firestore.
+     */
     private void hydrateEvent(EventModel event, QueryDocumentSnapshot doc) {
         event.setId(doc.getId());
         if (event.getDescription() == null) {
@@ -230,6 +252,12 @@ public class OrganizerActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Picks the first string that is not null or empty.
+     * @param first The primary string choice.
+     * @param second The secondary string choice.
+     * @return The first non-blank string, or null if both are blank.
+     */
     private String firstNonBlank(String first, String second) {
         if (first != null && !first.trim().isEmpty()) {
             return first;
@@ -240,6 +268,12 @@ public class OrganizerActivity extends AppCompatActivity {
         return null;
     }
 
+    /**
+     * Returns the given value or a fallback string if the value is blank.
+     * @param value The candidate string.
+     * @param fallback The string to return if value is null or empty.
+     * @return The original value or fallback.
+     */
     private String safe(String value, String fallback) {
         if (value == null || value.trim().isEmpty()) {
             return fallback;
@@ -247,6 +281,12 @@ public class OrganizerActivity extends AppCompatActivity {
         return value;
     }
 
+    /**
+     * Applies custom styling to a standard list item row.
+     * @param itemView The root view of the row.
+     * @param titleView The primary text view in the row.
+     * @param subtitleView The secondary text view in the row.
+     */
     private void styleSimpleListRow(View itemView, TextView titleView, TextView subtitleView) {
         GradientDrawable background = new GradientDrawable();
         background.setColor(0xFFF7F3FC);
@@ -269,6 +309,11 @@ public class OrganizerActivity extends AppCompatActivity {
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
     }
 
+    /**
+     * Converts density-independent pixels (dp) to screen pixels (px).
+     * @param dp The value in dp.
+     * @return The corresponding value in px.
+     */
     private int dpToPx(int dp) {
         return Math.round(dp * getResources().getDisplayMetrics().density);
     }

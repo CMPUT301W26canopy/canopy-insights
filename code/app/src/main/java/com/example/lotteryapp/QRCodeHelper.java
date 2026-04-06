@@ -11,6 +11,12 @@ import com.journeyapps.barcodescanner.BarcodeEncoder;
  */
 public class QRCodeHelper {
 
+    /**
+     * Generates a QR code bitmap for a given event ID.
+     *
+     * @param eventId The ID of the event to encode into the QR code.
+     * @return A Bitmap containing the generated QR code, or null if generation fails.
+     */
     public static Bitmap generateQRCode(String eventId) {
         try {
             BarcodeEncoder encoder = new BarcodeEncoder();
@@ -25,6 +31,13 @@ public class QRCodeHelper {
             return null;
         }
     }
+
+    /**
+     * Decodes a QR code from a given bitmap image.
+     *
+     * @param bitmap The bitmap image containing the QR code to decode.
+     * @return The decoded string content (e.g., event ID), or null if decoding fails.
+     */
     public static String decodeQRCode(Bitmap bitmap) {
         if (bitmap == null) return null;
         int width = bitmap.getWidth();

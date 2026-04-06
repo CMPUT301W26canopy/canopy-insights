@@ -12,6 +12,10 @@ public final class NavigationHelper {
 
     private NavigationHelper() {}
 
+    /**
+     * Takes in the current activity and opens Login Activity from current activity
+     * @param activity The current activity.
+     */
     public static void openHistory(AppCompatActivity activity) {
         DeviceData deviceData = DeviceData.getInstance(activity);
         if (!deviceData.isLoggedIn()) {

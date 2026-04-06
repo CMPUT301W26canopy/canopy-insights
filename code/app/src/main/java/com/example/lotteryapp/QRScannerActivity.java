@@ -34,6 +34,10 @@ public class QRScannerActivity extends AppCompatActivity {
                         }
                     });
 
+    /**
+     * Initializes the activity and launches the image picker.
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down then this Bundle contains the data it most recently supplied in onSaveInstanceState(Bundle).
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,6 +48,10 @@ public class QRScannerActivity extends AppCompatActivity {
         pickImageLauncher.launch(intent);
     }
 
+    /**
+     * Decodes a QR code from the provided image URI and navigates to the event details.
+     * @param imageUri The URI of the image to decode.
+     */
     private void decodeQRCodeFromImage(Uri imageUri) {
         try {
             Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);

@@ -11,11 +11,23 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+/**
+ * A fragment that allows the user to input registration dates and a waitlist limit for an event.
+ * This fragment interacts with {@link CreateEventActivity} to save the provided information.
+ */
 public class RegistrationPeriodFragment extends Fragment {
 
     private EditText etRegStartDate, etRegEndDate, etWaitlistLimit;
     private Button btnCancelReg, btnSaveReg;
 
+    /**
+     * Configures the UI for the registration period settings.
+     *
+     * @param inflater           The LayoutInflater object that can be used to inflate any views in the fragment.
+     * @param container          If non-null, this is the parent view that the fragment's UI should be attached to.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state.
+     * @return The View for the fragment's UI.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
