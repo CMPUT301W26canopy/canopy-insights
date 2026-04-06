@@ -21,8 +21,14 @@ import java.util.List;
  */
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> {
 
-    // callback so MainActivity knows when View is clicked
+    /**
+     * Interface definition for a callback to be invoked when an event card's action is clicked.
+     */
     public interface OnEventClickListener {
+        /**
+         * Called when the view button on an event card is clicked.
+         * @param event The {@link EventModel} associated with the clicked item.
+         */
         void onViewClick(EventModel event);
     }
 
@@ -30,6 +36,12 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
     private final Context context;
     private final OnEventClickListener listener;
 
+    /**
+     * Constructs a new EventAdapter.
+     * @param context The current context.
+     * @param events The initial list of events to display.
+     * @param listener The listener to handle event click actions.
+     */
     public EventAdapter(Context context, List<EventModel> events, OnEventClickListener listener) {
         this.context = context;
         this.events = events;
@@ -64,12 +76,21 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
         return events.size();
     }
 
-    // replaces the list and refreshes the RecyclerView
+    /**
+     * Replaces the current list of events with a new one and refreshes the RecyclerView.
+     * @param newList The new list of {@link EventModel} objects.
+     */
     public void updateList(List<EventModel> newList) {
         this.events = newList;
         notifyDataSetChanged();
     }
 
+    /**
+     * Decodes a base64 string into a Bitmap and sets it as the image for the provided ImageView.
+     * Falls back to a default app icon if the string is empty or invalid.
+     * @param imageView The target ImageView.
+     * @param posterBase64 The base64 encoded string of the poster image.
+     */
     private void bindPoster(ImageView imageView, String posterBase64) {
         if (posterBase64 != null && !posterBase64.trim().isEmpty()) {
             try {
@@ -88,6 +109,12 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
         imageView.setImageResource(R.mipmap.ic_launcher);
     }
 
+    /**
+     * Provides a fallback string if the provided value is null or empty.
+     * @param value The value to check.
+     * @param fallback The string to return if the value is invalid.
+     * @return The original value if valid; otherwise the fallback.
+     */
     private String safe(String value, String fallback) {
         if (value == null || value.trim().isEmpty()) {
             return fallback;
@@ -95,11 +122,18 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
         return value;
     }
 
+    /**
+     * Holds references to the views for an individual event list item.
+     */
     static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvName, tvAgeGroup, tvLocation, tvPrice, tvStats;
         ImageView ivEventPhoto;
         Button btnView;
 
+        /**
+         * Constructs a new ViewHolder.
+         * @param itemView The root view of the item layout.
+         */
         ViewHolder(View itemView) {
             super(itemView);
             ivEventPhoto = itemView.findViewById(R.id.ivEventPhoto);
