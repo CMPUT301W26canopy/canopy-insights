@@ -154,6 +154,10 @@ public class GeolocationFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Performs an asynchronous search for locations matching the given query using Geocoder.
+     * @param query The search string (minimum 3 characters).
+     */
     private void searchLocation(String query) {
         if (query.length() < 3) {
             filteredLocations.clear();
@@ -182,11 +186,17 @@ public class GeolocationFragment extends Fragment {
         });
     }
 
+    /**
+     * Refreshes the display list of added locations and updates the header count.
+     */
     private void updateAddedList() {
         if (addedAdapter != null) addedAdapter.notifyDataSetChanged();
         if (tvAddedHeader != null) tvAddedHeader.setText("Added Locations (" + addedLocations.size() + ")");
     }
 
+    /**
+     * Removes the fragment from the parent Activity's fragment manager and pops the back stack.
+     */
     private void closeFragment() {
         if (getActivity() != null) {
             getActivity().getSupportFragmentManager().beginTransaction()

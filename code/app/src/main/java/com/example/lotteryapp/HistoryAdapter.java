@@ -29,6 +29,11 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
     private final Context context;
     private final List<HistoryItem> items;
 
+    /**
+     * Constructs a new HistoryAdapter.
+     * @param context The current context.
+     * @param items The list of history items to display.
+     */
     public HistoryAdapter(Context context, List<HistoryItem> items) {
         this.context = context;
         this.items = items;
@@ -76,12 +81,22 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         return items.size();
     }
 
+    /**
+     * Builds a title string combining event name and date.
+     * @param item The history item.
+     * @return A formatted title string.
+     */
     private String buildTitle(HistoryItem item) {
         String name = valueOrDefault(item.eventName, "Untitled Event");
         String date = valueOrDefault(item.eventDate, "");
         return date.isEmpty() ? name : name + " | " + date;
     }
 
+    /**
+     * Shows a popup menu with actions for a history item.
+     * @param anchor The view to anchor the menu to.
+     * @param eventId The ID of the event.
+     */
     private void showMenu(View anchor, String eventId) {
         if (eventId == null || eventId.trim().isEmpty()) {
             return;
@@ -96,12 +111,21 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         popupMenu.show();
     }
 
+    /**
+     * Navigates to the event detail screen.
+     * @param eventId The ID of the event to open.
+     */
     private void openEvent(String eventId) {
         Intent intent = new Intent(context, EventActivity.class);
         intent.putExtra("EVENT_ID", eventId);
         context.startActivity(intent);
     }
 
+    /**
+     * Decodes and binds a base64 encoded poster image to an ImageView.
+     * @param imageView The target ImageView.
+     * @param posterBase64 The base64 encoded image string.
+     */
     private void bindPoster(ImageView imageView, String posterBase64) {
         if (posterBase64 != null && !posterBase64.trim().isEmpty()) {
             try {
@@ -123,6 +147,11 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         imageView.setImageResource(R.drawable.ic_launcher_foreground);
     }
 
+    /**
+     * Maps a raw status string to a display color.
+     * @param rawStatus The raw status string.
+     * @return The color integer value.
+     */
     private int getStatusColor(String rawStatus) {
         if (rawStatus == null || rawStatus.trim().isEmpty()) {
             return Color.parseColor("#40C66E");
@@ -146,6 +175,12 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         }
     }
 
+    /**
+     * Provides a default value if the candidate is null or empty.
+     * @param value The candidate string.
+     * @param fallback The fallback string.
+     * @return The resulting string.
+     */
     private String valueOrDefault(String value, String fallback) {
         if (value == null || value.trim().isEmpty()) {
             return fallback;
@@ -153,6 +188,9 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         return value;
     }
 
+    /**
+     * Holds references to the views for each history item.
+     */
     static class ViewHolder extends RecyclerView.ViewHolder {
         final TextView titleView;
         final TextView statusView;
@@ -165,6 +203,10 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         final Button viewButton;
         final ImageButton menuButton;
 
+        /**
+         * Constructs a new ViewHolder.
+         * @param itemView The root view of the item.
+         */
         ViewHolder(@NonNull View itemView) {
             super(itemView);
             titleView = itemView.findViewById(R.id.tvHistoryTitle);
@@ -180,6 +222,9 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         }
     }
 
+    /**
+     * Data model for a single history entry.
+     */
     public static class HistoryItem {
         public String eventId;
         public String eventName;
