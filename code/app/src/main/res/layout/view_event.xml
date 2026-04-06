@@ -128,6 +128,26 @@
                 android:textStyle="bold"
                 android:textColor="#000000" />
 
+            <TextView
+                android:id="@+id/tvEventStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="2dp"
+                android:text="Status : OPEN"
+                android:textColor="#6B5FA6"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvEventHelperMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="4dp"
+                android:paddingBottom="8dp"
+                android:text="Join the waiting list to participate."
+                android:textColor="#666666"
+                android:textSize="14sp" />
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/event_details"
                 android:layout_width="match_parent"
@@ -162,6 +182,26 @@
                 android:layout_marginTop="8dp"
                 android:text="LEAVE WAITING LIST"
                 android:backgroundTint="#F44336"
+                android:textColor="@android:color/white"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/btnAcceptSelection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="ACCEPT INVITATION"
+                android:backgroundTint="#40C66E"
+                android:textColor="@android:color/white"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/btnDeclineSelection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="DECLINE INVITATION"
+                android:backgroundTint="#C96A58"
                 android:textColor="@android:color/white"
                 android:visibility="gone" />
 

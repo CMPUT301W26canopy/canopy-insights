@@ -288,15 +288,22 @@ public class ApplicantsActivity extends AppCompatActivity {
         int spotsToFill = Math.min(spots, waiting.size());
         WriteBatch batch = FirestoreHelper.getDb().batch();
         List<String> selectedUserIds = new ArrayList<>();
+        List<String> remainingWaitingUserIds = new ArrayList<>();
         for (int i = 0; i < spotsToFill; i++) {
             selectedUserIds.add(waiting.get(i).get("userId"));
             batch.update(FirestoreHelper.getDb().collection("applications")
                     .document(waiting.get(i).get("id")), "status", "selected");
         }
+        for (int i = spotsToFill; i < waiting.size(); i++) {
+            remainingWaitingUserIds.add(waiting.get(i).get("userId"));
+        }
         batch.commit()
                 .addOnSuccessListener(v -> {
                     completeStatusUpdate(
-                            notifySelectedUsers(selectedUserIds),
+                            Tasks.whenAll(
+                                    notifySelectedUsers(selectedUserIds),
+                                    notifyWaitingUsers(remainingWaitingUserIds)
+                            ),
                             spotsToFill + " selected!"
                     );
                 })
@@ -328,15 +335,22 @@ public class ApplicantsActivity extends AppCompatActivity {
         int replacements = Math.min(spotsLeft, waiting.size());
         WriteBatch batch = FirestoreHelper.getDb().batch();
         List<String> selectedUserIds = new ArrayList<>();
+        List<String> remainingWaitingUserIds = new ArrayList<>();
         for (int i = 0; i < replacements; i++) {
             selectedUserIds.add(waiting.get(i).get("userId"));
             batch.update(FirestoreHelper.getDb().collection("applications")
                     .document(waiting.get(i).get("id")), "status", "selected");
         }
+        for (int i = replacements; i < waiting.size(); i++) {
+            remainingWaitingUserIds.add(waiting.get(i).get("userId"));
+        }
         batch.commit()
                 .addOnSuccessListener(v -> {
                     completeStatusUpdate(
-                            notifySelectedUsers(selectedUserIds),
+                            Tasks.whenAll(
+                                    notifySelectedUsers(selectedUserIds),
+                                    notifyWaitingUsers(remainingWaitingUserIds)
+                            ),
                             replacements + " replacements selected!"
                     );
                 })
@@ -504,6 +518,19 @@ public class ApplicantsActivity extends AppCompatActivity {
         }
 
         return NotificationHelper.notifyCancelled(
+                getNotificationSenderId(),
+                eventId,
+                getNotificationEventName(),
+                userIds
+        );
+    }
+
+    private Task<Void> notifyWaitingUsers(List<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Tasks.forResult(null);
+        }
+
+        return NotificationHelper.notifyWaitingList(
                 getNotificationSenderId(),
                 eventId,
                 getNotificationEventName(),

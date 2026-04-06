@@ -39,153 +39,202 @@ import java.util.Map;
 
 public class EventActivity extends AppCompatActivity {
 
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
+
     private final List<String> eventDetailsList = new ArrayList<>();
     private SimpleTextAdapter adapter;
-    private TextView costHeading, eventHeading;
-    private ImageView qrCodeView, eventImageView;
-    private Button btnJoin, btnLeave, btnComments;
-    private String eventId, userId;
-    private boolean isOnWaitingList = false;
-    private boolean isInvitedHost = false;
-    
+    private TextView costHeading;
+    private TextView eventHeading;
+    private TextView statusHeading;
+    private TextView helperMessageView;
+    private ImageView qrCodeView;
+    private ImageView eventImageView;
+    private Button btnJoin;
+    private Button btnLeave;
+    private Button btnAccept;
+    private Button btnDecline;
+    private Button btnComments;
+    private String eventId;
+    private String userId;
+    private String currentApplicationId;
+    private String currentApplicationStatus = "";
+    private boolean isInvitedHost;
     private FusedLocationProviderClient fusedLocationClient;
-    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.view_event);
 
-        DeviceData deviceData = DeviceData.getInstance(this);
-        userId = deviceData.getAccountID();
+        userId = DeviceData.getInstance(this).getAccountID();
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        RecyclerView eventDescDisplay = findViewById(R.id.event_details);
-        if (eventDescDisplay != null) {
-            eventDescDisplay.setLayoutManager(new LinearLayoutManager(this));
-            adapter = new SimpleTextAdapter(eventDetailsList);
-            eventDescDisplay.setAdapter(adapter);
-        }
+        RecyclerView recyclerView = findViewById(R.id.event_details);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new SimpleTextAdapter(eventDetailsList);
+        recyclerView.setAdapter(adapter);
 
         costHeading = findViewById(R.id.cost_view);
         eventHeading = findViewById(R.id.event_heading);
-        btnJoin  = findViewById(R.id.btnJoinWaitingList);
-        btnLeave = findViewById(R.id.btnLeaveWaitingList);
-        btnComments = findViewById(R.id.btnComments);
+        statusHeading = findViewById(R.id.tvEventStatus);
+        helperMessageView = findViewById(R.id.tvEventHelperMessage);
+        qrCodeView = findViewById(R.id.event_qr_code);
         eventImageView = findViewById(R.id.event_image);
+        btnJoin = findViewById(R.id.btnJoinWaitingList);
+        btnLeave = findViewById(R.id.btnLeaveWaitingList);
+        btnAccept = findViewById(R.id.btnAcceptSelection);
+        btnDecline = findViewById(R.id.btnDeclineSelection);
+        btnComments = findViewById(R.id.btnComments);
 
-        ImageButton backBtnTop = findViewById(R.id.back_btn_top);
-        if (backBtnTop != null) backBtnTop.setOnClickListener(v -> finish());
+        ImageButton backButton = findViewById(R.id.back_btn_top);
+        if (backButton != null) {
+            backButton.setOnClickListener(v -> finish());
+        }
 
         eventId = getIntent().getStringExtra("EVENT_ID");
-        if (eventId != null) {
-            loadEventDetails(eventId);
-            checkIfAlreadyJoined(eventId);
+        if (eventId == null || eventId.trim().isEmpty()) {
+            Toast.makeText(this, "Unable to open event", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
         }
 
-        if (btnJoin != null) btnJoin.setOnClickListener(v -> joinWaitingList());
-        if (btnLeave != null) btnLeave.setOnClickListener(v -> leaveWaitingList());
-        
-        if (btnComments != null) {
-            btnComments.setOnClickListener(v -> {
-                if (eventId != null) {
-                    CommentsFragment fragment = CommentsFragment.newInstance(eventId);
-                    getSupportFragmentManager().beginTransaction()
-                            .replace(R.id.fragment_container, fragment)
-                            .addToBackStack(null)
-                            .commit();
-                }
-            });
-        }
+        btnJoin.setOnClickListener(v -> joinWaitingList());
+        btnLeave.setOnClickListener(v -> leaveWaitingList());
+        btnAccept.setOnClickListener(v -> updateApplicationStatus("accepted", "Invitation accepted"));
+        btnDecline.setOnClickListener(v -> updateApplicationStatus("declined", "Invitation declined"));
+        btnComments.setOnClickListener(v -> openComments());
 
         setupBottomNav();
-        qrCodeView = findViewById(R.id.event_qr_code);
+        loadEventDetails();
+        refreshApplicationState();
     }
 
-    private void loadEventDetails(String eventId) {
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshApplicationState();
+    }
+
+    private void loadEventDetails() {
         FirestoreHelper.getDb().collection("events").document(eventId)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
-                    EventModel event = null;
-                    try {
-                        event = documentSnapshot.toObject(EventModel.class);
-                    } catch (Exception e) {
-                        event = new EventModel();
-                        event.setWaitingList(new ArrayList<>());
-                        String name = documentSnapshot.getString("name");
-                        String date = documentSnapshot.getString("date");
-                        String loc  = documentSnapshot.getString("location");
-                        String age  = documentSnapshot.getString("ageGroup");
-                        String poster = documentSnapshot.getString("posterImage");
-                        Long price  = documentSnapshot.getLong("price");
-                        Long spots  = documentSnapshot.getLong("totalSpots");
-                        if (name  != null) event.setName(name);
-                        if (date  != null) event.setDate(date);
-                        if (loc   != null) event.setLocation(loc);
-                        if (age   != null) event.setAgeGroup(age);
-                        if (poster != null) event.setPosterImage(poster);
-                        if (price != null) event.setPrice(price.doubleValue());
-                        if (spots != null) event.setTotalSpots(spots.intValue());
+                    EventModel event = mapEvent(documentSnapshot);
+                    if (event == null) {
+                        Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
                     }
-                    if (event != null) {
-                        // Check if current user is an invited host
-                        List<String> invitedHosts = (List<String>) documentSnapshot.get("invitedHosts");
-                        isInvitedHost = invitedHosts != null && invitedHosts.contains(userId);
-                        
-                        eventDetailsList.clear();
-                        if (isInvitedHost) {
-                            eventDetailsList.add("★ YOU ARE A CO-HOST ★");
-                        }
-                        eventDetailsList.add("Total Spots: " + event.getTotalSpots());
-                        eventDetailsList.add("Current Waiting List: " + event.getWaitingListCount());
-                        eventDetailsList.add(String.format(Locale.getDefault(), "Price: $%d", (int) event.getPrice()));
-                        eventDetailsList.add("Age Group: " + event.getAgeGroup());
-                        eventDetailsList.add("Location: " + event.getLocation());
-                        eventDetailsList.add("Date: " + event.getDate());
-                        
-                        if (costHeading != null)
-                            costHeading.setText(String.format(Locale.getDefault(), "$%d", (int) event.getPrice()));
-                        if (eventHeading != null)
-                            eventHeading.setText(event.getName());
-                        
-                        // Load poster image
-                        if (eventImageView != null && event.getPosterImage() != null && !event.getPosterImage().isEmpty()) {
-                            try {
-                                byte[] decodedString = Base64.decode(event.getPosterImage(), Base64.DEFAULT);
-                                Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-                                eventImageView.setImageBitmap(decodedByte);
-                            } catch (Exception e) {
-                                eventImageView.setImageResource(R.mipmap.ic_launcher);
-                            }
-                        } else if (eventImageView != null) {
-                            eventImageView.setImageResource(R.mipmap.ic_launcher);
-                        }
 
-                        adapter.notifyDataSetChanged();
-                        updateJoinLeaveButtons();
+                    List<String> invitedHosts = (List<String>) documentSnapshot.get("invitedHosts");
+                    isInvitedHost = invitedHosts != null && invitedHosts.contains(userId);
 
-                        if (qrCodeView != null) {
-                            Bitmap qr = QRCodeHelper.generateQRCode(eventId);
-                            if (qr != null) {
-                                qrCodeView.setImageBitmap(qr);
-                                qrCodeView.setVisibility(View.VISIBLE);
-                            }
-                        }
+                    eventDetailsList.clear();
+                    if (isInvitedHost) {
+                        eventDetailsList.add("YOU ARE A CO-HOST");
                     }
+                    eventDetailsList.add("Total Spots: " + event.getTotalSpots());
+                    eventDetailsList.add("Current Waiting List: " + event.getWaitingListCount());
+                    eventDetailsList.add(String.format(Locale.getDefault(), "Price: $%d", (int) event.getPrice()));
+                    eventDetailsList.add("Age Group: " + safe(event.getAgeGroup(), "All Age Groups"));
+                    eventDetailsList.add("Location: " + safe(event.getLocation(), "Location TBA"));
+                    eventDetailsList.add("Date: " + safe(event.getDate(), "Date TBA"));
+                    adapter.notifyDataSetChanged();
+
+                    costHeading.setText(String.format(Locale.getDefault(), "$%d", (int) event.getPrice()));
+                    eventHeading.setText(safe(event.getName(), "Event"));
+                    bindPoster(event.getPosterImage());
+
+                    Bitmap qr = QRCodeHelper.generateQRCode(eventId);
+                    if (qr != null) {
+                        qrCodeView.setImageBitmap(qr);
+                        qrCodeView.setVisibility(View.VISIBLE);
+                    }
+
+                    updateActionButtons();
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Error loading event", Toast.LENGTH_SHORT).show());
     }
 
-    private void checkIfAlreadyJoined(String eventId) {
-        if (userId == null) return;
+    private EventModel mapEvent(DocumentSnapshot documentSnapshot) {
+        if (documentSnapshot == null || !documentSnapshot.exists()) {
+            return null;
+        }
+
+        try {
+            EventModel mapped = documentSnapshot.toObject(EventModel.class);
+            if (mapped != null) {
+                return mapped;
+            }
+        } catch (Exception ignored) {
+        }
+
+        EventModel event = new EventModel();
+        event.setWaitingList(new ArrayList<>());
+        event.setName(documentSnapshot.getString("name"));
+        event.setDate(documentSnapshot.getString("date"));
+        event.setLocation(documentSnapshot.getString("location"));
+        event.setAgeGroup(documentSnapshot.getString("ageGroup"));
+        event.setPosterImage(firstNonBlank(documentSnapshot.getString("posterImage"), documentSnapshot.getString("poster")));
+
+        Double price = documentSnapshot.getDouble("price");
+        Long priceLong = documentSnapshot.getLong("price");
+        if (price != null) {
+            event.setPrice(price);
+        } else if (priceLong != null) {
+            event.setPrice(priceLong.doubleValue());
+        }
+
+        Long spots = documentSnapshot.getLong("totalSpots");
+        if (spots != null) {
+            event.setTotalSpots(spots.intValue());
+        }
+        return event;
+    }
+
+    private void bindPoster(String posterValue) {
+        if (posterValue != null && !posterValue.trim().isEmpty()) {
+            try {
+                byte[] decoded = Base64.decode(posterValue, Base64.DEFAULT);
+                Bitmap bitmap = BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
+                if (bitmap != null) {
+                    eventImageView.setImageBitmap(bitmap);
+                    return;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        eventImageView.setImageResource(R.mipmap.ic_launcher);
+    }
+
+    private void refreshApplicationState() {
+        if (userId == null || eventId == null) {
+            currentApplicationId = null;
+            currentApplicationStatus = "";
+            updateActionButtons();
+            return;
+        }
+
         FirestoreHelper.getDb().collection("applications")
                 .whereEqualTo("eventId", eventId)
                 .whereEqualTo("userId", userId)
                 .get()
                 .addOnSuccessListener(snap -> {
-                    isOnWaitingList = !snap.isEmpty();
-                    updateJoinLeaveButtons();
+                    if (snap.isEmpty()) {
+                        currentApplicationId = null;
+                        currentApplicationStatus = "";
+                    } else {
+                        DocumentSnapshot appDoc = snap.getDocuments().get(0);
+                        currentApplicationId = appDoc.getId();
+                        currentApplicationStatus = appDoc.getString("status");
+                    }
+                    updateActionButtons();
+                })
+                .addOnFailureListener(e -> {
+                    currentApplicationId = null;
+                    currentApplicationStatus = "";
+                    updateActionButtons();
                 });
     }
 
@@ -206,20 +255,17 @@ public class EventActivity extends AppCompatActivity {
                         List<String> allowedLocations = (List<String>) documentSnapshot.get("geolocationList");
                         checkLocationAndJoin(allowedLocations);
                     } else {
-                        // Even if verification is off, try to capture location for the map
                         tryGetLocationAndJoin();
                     }
                 })
-                .addOnFailureListener(e -> Toast.makeText(this, "Failed to verify event settings", Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to verify event settings", Toast.LENGTH_SHORT).show());
     }
 
     private void tryGetLocationAndJoin() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                 || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            
-            fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
-                performJoin(location);
-            });
+            fusedLocationClient.getLastLocation().addOnSuccessListener(this, this::performJoin);
         } else {
             performJoin(null);
         }
@@ -233,19 +279,120 @@ public class EventActivity extends AppCompatActivity {
         }
 
         fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
-            if (location != null) {
-                String myLocation = getAddressString(location);
-                Toast.makeText(this, "My location: " + myLocation, Toast.LENGTH_SHORT).show();
-                
-                if (isLocationInAllowedList(location, allowedLocations)) {
-                    performJoin(location);
-                } else {
-                    Toast.makeText(this, "You must be in an allowed location to join this event.", Toast.LENGTH_LONG).show();
-                }
-            } else {
+            if (location == null) {
                 Toast.makeText(this, "Could not determine your location. Please ensure location is enabled.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Toast.makeText(this, "My location: " + getAddressString(location), Toast.LENGTH_SHORT).show();
+            if (isLocationInAllowedList(location, allowedLocations)) {
+                performJoin(location);
+            } else {
+                Toast.makeText(this, "You must be in an allowed location to join this event.", Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private void performJoin(Location location) {
+        Map<String, Object> application = new HashMap<>();
+        application.put("eventId", eventId);
+        application.put("userId", userId);
+        application.put("userName", DeviceData.getInstance(this).getUsername());
+        application.put("status", "waiting");
+        if (location != null) {
+            application.put("geoPoint", new GeoPoint(location.getLatitude(), location.getLongitude()));
+        }
+
+        FirestoreHelper.getDb().collection("applications")
+                .add(application)
+                .addOnSuccessListener(ref -> {
+                    currentApplicationId = ref.getId();
+                    currentApplicationStatus = "waiting";
+                    updateActionButtons();
+                    Toast.makeText(this, "Joined waiting list!", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to join", Toast.LENGTH_SHORT).show());
+    }
+
+    private void leaveWaitingList() {
+        if (!EventFlowRules.canLeave(currentApplicationStatus) || currentApplicationId == null) {
+            refreshApplicationState();
+            return;
+        }
+
+        FirestoreHelper.getDb().collection("applications")
+                .document(currentApplicationId)
+                .delete()
+                .addOnSuccessListener(unused -> {
+                    currentApplicationId = null;
+                    currentApplicationStatus = "";
+                    updateActionButtons();
+                    Toast.makeText(this, "Left waiting list", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to leave", Toast.LENGTH_SHORT).show());
+    }
+
+    private void updateApplicationStatus(String newStatus, String successMessage) {
+        if (currentApplicationId == null || currentApplicationId.trim().isEmpty()) {
+            refreshApplicationState();
+            return;
+        }
+
+        FirestoreHelper.getDb().collection("applications")
+                .document(currentApplicationId)
+                .update("status", newStatus)
+                .addOnSuccessListener(unused -> {
+                    currentApplicationStatus = newStatus;
+                    updateActionButtons();
+                    Toast.makeText(this, successMessage, Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to update response", Toast.LENGTH_SHORT).show());
+    }
+
+    private void updateActionButtons() {
+        if (statusHeading != null) {
+            statusHeading.setText(EventFlowRules.getEventStatusLabel(currentApplicationStatus, isInvitedHost));
+        }
+        if (helperMessageView != null) {
+            helperMessageView.setText(getHelperMessage());
+        }
+
+        btnJoin.setVisibility(EventFlowRules.canJoin(currentApplicationStatus, isInvitedHost) ? View.VISIBLE : View.GONE);
+        btnLeave.setVisibility(EventFlowRules.canLeave(currentApplicationStatus) ? View.VISIBLE : View.GONE);
+        btnAccept.setVisibility(EventFlowRules.canAccept(currentApplicationStatus) ? View.VISIBLE : View.GONE);
+        btnDecline.setVisibility(EventFlowRules.canDecline(currentApplicationStatus) ? View.VISIBLE : View.GONE);
+    }
+
+    private String getHelperMessage() {
+        if (isInvitedHost) {
+            return "You are a co-host for this event.";
+        }
+
+        switch (EventFlowRules.normalizeStatus(currentApplicationStatus)) {
+            case "waiting":
+                return "You are on the waiting list.";
+            case "selected":
+                return "You were selected. Accept or decline your invitation.";
+            case "accepted":
+                return "You accepted your invitation.";
+            case "declined":
+                return "You declined your invitation.";
+            case "cancelled":
+                return "Your invitation was cancelled.";
+            default:
+                return "Join the waiting list to participate.";
+        }
+    }
+
+    private void openComments() {
+        CommentsFragment fragment = CommentsFragment.newInstance(eventId);
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit();
     }
 
     private String getAddressString(Location location) {
@@ -269,7 +416,7 @@ public class EventActivity extends AppCompatActivity {
 
     private boolean isLocationInAllowedList(Location location, List<String> allowedLocations) {
         if (allowedLocations == null || allowedLocations.isEmpty()) return true;
-        
+
         Geocoder geocoder = new Geocoder(this, Locale.getDefault());
         try {
             List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
@@ -280,10 +427,10 @@ public class EventActivity extends AppCompatActivity {
                 String country = address.getCountryName();
 
                 for (String allowed : allowedLocations) {
-                    String lowerAllowed = allowed.toLowerCase();
-                    if ((city != null && lowerAllowed.contains(city.toLowerCase())) ||
-                        (province != null && lowerAllowed.contains(province.toLowerCase())) ||
-                        (country != null && lowerAllowed.contains(country.toLowerCase()))) {
+                    String lowerAllowed = allowed.toLowerCase(Locale.getDefault());
+                    if ((city != null && lowerAllowed.contains(city.toLowerCase(Locale.getDefault())))
+                            || (province != null && lowerAllowed.contains(province.toLowerCase(Locale.getDefault())))
+                            || (country != null && lowerAllowed.contains(country.toLowerCase(Locale.getDefault())))) {
                         return true;
                     }
                 }
@@ -292,29 +439,6 @@ public class EventActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         return false;
-    }
-
-    private void performJoin(Location location) {
-        Map<String, Object> application = new HashMap<>();
-        application.put("eventId", eventId);
-        application.put("userId", userId);
-        application.put("userName", DeviceData.getInstance(this).getUsername());
-        application.put("status", "waiting");
-        
-        if (location != null) {
-            // Storing as a GeoPoint for map display
-            application.put("geoPoint", new GeoPoint(location.getLatitude(), location.getLongitude()));
-        }
-
-        FirestoreHelper.getDb().collection("applications")
-                .add(application)
-                .addOnSuccessListener(ref -> {
-                    isOnWaitingList = true;
-                    updateJoinLeaveButtons();
-                    Toast.makeText(this, "Joined waiting list!", Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Failed to join", Toast.LENGTH_SHORT).show());
     }
 
     @Override
@@ -329,52 +453,39 @@ public class EventActivity extends AppCompatActivity {
         }
     }
 
-    private void leaveWaitingList() {
-        if (userId == null) return;
-        FirestoreHelper.getDb().collection("applications")
-                .whereEqualTo("eventId", eventId)
-                .get()
-                .addOnSuccessListener(snap -> {
-                    for (DocumentSnapshot doc : snap.getDocuments()) {
-                        if (userId.equals(doc.getString("userId"))) {
-                            doc.getReference().delete();
-                        }
-                    }
-                    isOnWaitingList = false;
-                    updateJoinLeaveButtons();
-                    Toast.makeText(this, "Left waiting list", Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Failed to leave", Toast.LENGTH_SHORT).show());
-    }
-
-    private void updateJoinLeaveButtons() {
-        if (isInvitedHost) {
-            if (btnJoin != null) btnJoin.setVisibility(View.GONE);
-            if (btnLeave != null) btnLeave.setVisibility(View.GONE);
-        } else {
-            if (btnJoin != null) btnJoin.setVisibility(isOnWaitingList ? View.GONE : View.VISIBLE);
-            if (btnLeave != null) btnLeave.setVisibility(isOnWaitingList ? View.VISIBLE : View.GONE);
-        }
-    }
-
     private void setupBottomNav() {
-        View navHome = findViewById(R.id.navHome);
-        if (navHome != null) navHome.setOnClickListener(v -> finish());
-        View navCreate = findViewById(R.id.navCreate);
-        if (navCreate != null) navCreate.setOnClickListener(v ->
+        findViewById(R.id.navHome).setOnClickListener(v -> finish());
+        findViewById(R.id.navCreate).setOnClickListener(v ->
                 startActivity(new Intent(this, OrganizerActivity.class)));
-        View navHistory = findViewById(R.id.navHistory);
-        if (navHistory != null) navHistory.setOnClickListener(v ->
+        findViewById(R.id.navHistory).setOnClickListener(v ->
                 NavigationHelper.openHistory(this));
-        View navProfile = findViewById(R.id.navProfile);
-        if (navProfile != null) navProfile.setOnClickListener(v ->
+        findViewById(R.id.navProfile).setOnClickListener(v ->
                 startActivity(new Intent(this, LoginActivity.class)));
+    }
+
+    private String safe(String value, String fallback) {
+        if (value == null || value.trim().isEmpty()) {
+            return fallback;
+        }
+        return value;
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (first != null && !first.trim().isEmpty()) {
+            return first;
+        }
+        if (second != null && !second.trim().isEmpty()) {
+            return second;
+        }
+        return null;
     }
 
     private static class SimpleTextAdapter extends RecyclerView.Adapter<SimpleTextAdapter.ViewHolder> {
         private final List<String> data;
-        SimpleTextAdapter(List<String> data) { this.data = data; }
+
+        SimpleTextAdapter(List<String> data) {
+            this.data = data;
+        }
 
         @NonNull
         @Override
@@ -390,10 +501,13 @@ public class EventActivity extends AppCompatActivity {
         }
 
         @Override
-        public int getItemCount() { return data.size(); }
+        public int getItemCount() {
+            return data.size();
+        }
 
         static class ViewHolder extends RecyclerView.ViewHolder {
             final TextView textView;
+
             ViewHolder(View itemView) {
                 super(itemView);
                 textView = itemView.findViewById(android.R.id.text1);
