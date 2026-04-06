@@ -36,12 +36,14 @@ public class CreateEventActivity extends AppCompatActivity {
 
     EditText eventNameInput, eventLocationInput, eventPriceInput, eventDescriptionInput,
             eventDateInput, eventTotalSpotsInput, eventWaitlistLimitInput;
-    Button createEventButton, btnPrivate, btnGeolocation, btnUploadPoster;
+    Button createEventButton, btnPrivate, btnGeolocation, btnUploadPoster, btnOptions;
     ImageView eventQRCode, eventPosterPreview;
     private boolean eventCreated = false;
     private final ArrayList<String> addedLocations = new ArrayList<>();
     private boolean geolocationVerification = false;
     private String selectedPosterBase64;
+    private String registrationStartDate;
+    private String registrationEndDate;
 
     private DeviceData deviceData;
     private ActivityResultLauncher<String> pickImageLauncher;
@@ -67,6 +69,7 @@ public class CreateEventActivity extends AppCompatActivity {
         btnPrivate            = findViewById(R.id.btnPrivate);
         btnGeolocation        = findViewById(R.id.btnGeolocation);
         btnUploadPoster       = findViewById(R.id.btnUploadPoster);
+        btnOptions            = findViewById(R.id.btnOptions);
         eventQRCode           = findViewById(R.id.eventQRCode);
         eventPosterPreview    = findViewById(R.id.eventPosterPreview);
 
@@ -98,6 +101,13 @@ public class CreateEventActivity extends AppCompatActivity {
                     .commit();
         });
 
+        btnOptions.setOnClickListener(v -> {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.geolocationContainer, new RegistrationPeriodFragment())
+                    .addToBackStack(null)
+                    .commit();
+        });
+
         btnUploadPoster.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
     }
 
@@ -111,6 +121,16 @@ public class CreateEventActivity extends AppCompatActivity {
 
     public void setGeolocationVerification(boolean geolocationVerification) {
         this.geolocationVerification = geolocationVerification;
+    }
+
+    public void setRegistrationPeriod(String startDate, String endDate, Integer waitlistLimit) {
+        this.registrationStartDate = startDate;
+        this.registrationEndDate = endDate;
+        if (waitlistLimit != null) {
+            eventWaitlistLimitInput.setText(String.valueOf(waitlistLimit));
+        } else {
+            eventWaitlistLimitInput.setText("");
+        }
     }
 
     /**
@@ -184,6 +204,12 @@ public class CreateEventActivity extends AppCompatActivity {
         event.put("visibility", visibility);
         event.put("geolocationList", addedLocations);
         event.put("geolocationVerification", geolocationVerification);
+        if (registrationStartDate != null) {
+            event.put("registrationStartDate", registrationStartDate);
+        }
+        if (registrationEndDate != null) {
+            event.put("registrationEndDate", registrationEndDate);
+        }
         if (selectedPosterBase64 != null && !selectedPosterBase64.isEmpty()) {
             event.put("posterImage", selectedPosterBase64);
             event.put("poster", selectedPosterBase64);
@@ -276,7 +302,7 @@ public class CreateEventActivity extends AppCompatActivity {
                     break;
                 default:
                     return bitmap;
-            }
+                }
 
             return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
         } catch (IOException e) {

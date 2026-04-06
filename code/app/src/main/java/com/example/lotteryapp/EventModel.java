@@ -34,6 +34,9 @@ public class EventModel {
     private boolean geolocationVerification;
     private ArrayList<String> geolocationList;
 
+    private String registrationStartDate;
+    private String registrationEndDate;
+
     /**
      * Empty constructor required for Firestore mapping.
      */
@@ -324,5 +327,21 @@ public class EventModel {
      */
     public void removeLocation(String location) {
         if (geolocationList != null) geolocationList.remove(location);
+    }
+
+    public String getRegistrationStartDate() {
+        return registrationStartDate;
+    }
+
+    public void setRegistrationStartDate(String registrationStartDate) {
+        this.registrationStartDate = registrationStartDate;
+    }
+
+    public String getRegistrationEndDate() {
+        return registrationEndDate;
+    }
+
+    public void setRegistrationEndDate(String registrationEndDate) {
+        this.registrationEndDate = registrationEndDate;
     }
 }
