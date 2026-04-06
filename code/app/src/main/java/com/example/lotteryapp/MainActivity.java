@@ -72,15 +72,17 @@ public class MainActivity extends AppCompatActivity {
                             String date = doc.getString("date");
                             String age  = doc.getString("ageGroup");
                             String loc  = doc.getString("location");
+                            String visibility = doc.getString("visibility");
                             Long price  = doc.getLong("price");
                             Long spots  = doc.getLong("totalSpots");
                             if (date  != null) event.setDate(date);
                             if (age   != null) event.setAgeGroup(age);
                             if (loc   != null) event.setLocation(loc);
+                            if (visibility != null) event.setVisibility(visibility);
                             if (price != null) event.setPrice(price.doubleValue());
                             if (spots != null) event.setTotalSpots(spots.intValue());
                         }
-                        if (event != null) {
+                        if (event != null && !"Private".equalsIgnoreCase(event.getVisibility())) {
                             event.setId(doc.getId());
                             masterList.add(event);
                             displayList.add(event);
