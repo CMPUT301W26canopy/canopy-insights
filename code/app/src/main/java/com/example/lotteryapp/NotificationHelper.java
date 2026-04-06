@@ -97,6 +97,10 @@ public class NotificationHelper {
                 "Your invitation for " + eventName + " has been cancelled.", eventId);
     }
 
+    public static Task<Void> sendCustomNotification(String senderId, String eventId, String eventName, List<String> userIds, String message) {
+        return sendNotifications(senderId, userIds, "[" + eventName + "] " + message, eventId);
+    }
+
     private static List<String> normalizeReceiverIds(List<String> receiverIds) {
         if (receiverIds == null || receiverIds.isEmpty()) {
             return new ArrayList<>();

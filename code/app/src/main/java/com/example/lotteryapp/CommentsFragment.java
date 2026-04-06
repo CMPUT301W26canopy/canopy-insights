@@ -44,6 +44,7 @@ public class CommentsFragment extends Fragment {
     private String currentUserId;
     
     private boolean isOrganizerOrCohost = false;
+    private boolean isAdmin = false;
 
     private View replyBar;
     private TextView tvReplyStatus, tvReplySnippet;
@@ -72,19 +73,33 @@ public class CommentsFragment extends Fragment {
     }
 
     private void checkUserPrivileges() {
-        if (eventId == null || currentUserId == null) return;
-        
-        db.collection("events").document(eventId).get().addOnSuccessListener(doc -> {
-            if (doc.exists()) {
-                String organizerId = doc.getString("organizerId");
-                List<String> cohosts = (List<String>) doc.get("invitedHosts");
-                
-                if (currentUserId.equals(organizerId) || (cohosts != null && cohosts.contains(currentUserId))) {
-                    isOrganizerOrCohost = true;
+        if (currentUserId == null) return;
+
+        // Check Admin status first
+        db.collection("accounts").document(currentUserId).get().addOnSuccessListener(userDoc -> {
+            if (userDoc.exists()) {
+                String userType = userDoc.getString("userType");
+                if ("Admin".equalsIgnoreCase(userType)) {
+                    isAdmin = true;
                     if (adapter != null) adapter.notifyDataSetChanged();
                 }
             }
         });
+
+        // Check Organizer/Cohost status
+        if (eventId != null) {
+            db.collection("events").document(eventId).get().addOnSuccessListener(doc -> {
+                if (doc.exists()) {
+                    String organizerId = doc.getString("organizerId");
+                    List<String> cohosts = (List<String>) doc.get("invitedHosts");
+
+                    if (currentUserId.equals(organizerId) || (cohosts != null && cohosts.contains(currentUserId))) {
+                        isOrganizerOrCohost = true;
+                        if (adapter != null) adapter.notifyDataSetChanged();
+                    }
+                }
+            });
+        }
     }
 
     @Nullable
@@ -353,7 +368,7 @@ public class CommentsFragment extends Fragment {
                 holder.tvUser.setText(displayName != null ? displayName : c.getPosterID());
                 holder.tvText.setText(c.getMessage());
                 
-                if (currentUserId != null && (currentUserId.equals(c.getPosterID()) || isOrganizerOrCohost)) {
+                if (currentUserId != null && (currentUserId.equals(c.getPosterID()) || isOrganizerOrCohost || isAdmin)) {
                     holder.btnDelete.setVisibility(View.VISIBLE);
                 } else {
                     holder.btnDelete.setVisibility(View.GONE);

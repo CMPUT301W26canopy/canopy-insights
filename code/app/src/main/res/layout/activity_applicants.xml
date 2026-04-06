@@ -463,11 +463,11 @@
                     android:layout_marginTop="8dp">
 
                     <Button
-                        android:id="@+id/btnEditTags"
+                        android:id="@+id/btnSendNotif"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="..."
+                        android:text="Send"
                         android:textSize="12sp"
                         android:backgroundTint="#E8E4F3"
                         android:textColor="#6B5FA6"
@@ -485,7 +485,7 @@
                         android:layout_marginEnd="4dp"/>
 
                     <Button
-                        android:id="@+id/btnSendNotif"
+                        android:id="@+id/btnExtra"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"

@@ -45,7 +45,7 @@ public class ApplicantsActivity extends AppCompatActivity {
     private final List<Map<String, String>> displayList    = new ArrayList<>();
     private RecyclerView.Adapter adapter;
 
-    private Button btnRunLottery, btnReplacementDraw, btnCancelNoShows, btnInvite, btnViewEvent, btnMap;
+    private Button btnRunLottery, btnReplacementDraw, btnCancelNoShows, btnInvite, btnViewEvent, btnMap, btnSendNotif;
     private EditText etPrice, etDrawDate, etTotalSpots, etDescription;
     private TextView tvParticipantsLabel, tvApplicantCount, tvVisibility;
     private View participantsContainer;
@@ -81,6 +81,7 @@ public class ApplicantsActivity extends AppCompatActivity {
         btnInvite         = findViewById(R.id.btnInvite);
         btnViewEvent      = findViewById(R.id.viewEvent);
         btnMap            = findViewById(R.id.btnGeolocation);
+        btnSendNotif      = findViewById(R.id.btnSendNotif);
 
 
         // populate editable fields
@@ -150,6 +151,11 @@ public class ApplicantsActivity extends AppCompatActivity {
             Intent intent = new Intent(this, MapActivity.class);
             intent.putExtra("EVENT_ID", eventId);
             startActivity(intent);
+        });
+
+        btnSendNotif.setOnClickListener(v -> {
+            SendNotificationFragment fragment = SendNotificationFragment.newInstance(eventId, eventName);
+            fragment.show(getSupportFragmentManager(), "SendNotificationFragment");
         });
 
         // recycler

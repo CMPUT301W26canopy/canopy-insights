@@ -15,6 +15,7 @@ public class ProfileModel {
     private String phoneNumber;
     private String userType;
     private String deviceId;
+
     private boolean notificationEnabled = true; // single consistent field name
 
     public ProfileModel() {}

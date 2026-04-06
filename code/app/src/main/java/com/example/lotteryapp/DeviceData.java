@@ -14,6 +14,7 @@ public class DeviceData {
     private static final String PREF_NAME = "UserSession";
     private static final String KEY_ACCOUNT_ID = "accountID";
     private static final String KEY_USERNAME = "username";
+    private static final String KEY_USER_TYPE = "userType";
     private static final String KEY_IS_LOGGED_IN = "isLoggedIn";
 
     private static DeviceData instance;
@@ -46,11 +47,13 @@ public class DeviceData {
      * Creates a login session by storing user details.
      * @param accountID the user's unique account ID.
      * @param username the user's username.
+     * @param userType the user's type (e.g., "Admin", "User").
      */
-    public void createLoginSession(String accountID, String username) {
+    public void createLoginSession(String accountID, String username, String userType) {
         editor.putBoolean(KEY_IS_LOGGED_IN, true);
         editor.putString(KEY_ACCOUNT_ID, accountID);
         editor.putString(KEY_USERNAME, username);
+        editor.putString(KEY_USER_TYPE, userType);
         editor.apply();
     }
 
@@ -76,6 +79,23 @@ public class DeviceData {
      */
     public String getUsername() {
         return pref.getString(KEY_USERNAME, null);
+    }
+
+    /**
+     * Gets the stored user type.
+     * @return the user type, or null if not found.
+     */
+    public String getUserType() {
+        return pref.getString(KEY_USER_TYPE, null);
+    }
+
+    /**
+     * Checks if the current user is an administrator.
+     * @return true if the userType is "Admin", false otherwise.
+     */
+    public boolean isAdmin() {
+        String type = getUserType();
+        return "Admin".equalsIgnoreCase(type);
     }
 
     /**
